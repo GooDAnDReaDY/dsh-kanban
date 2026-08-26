@@ -47,7 +47,7 @@ test('встраивание в оболочку опирается на объ�
   // Приём хрупкий: он держится на вёрстке чужой оболочки. Если селекторы
   // исчезнут при правке, доска молча перестанет появляться — тест это ловит.
   const src = readFileSync(path.join(root, 'lib/client.js'), 'utf8')
-  for (const needle of ['data-pane="sidebar"', 'centerCol', 'newSession', 'logoRow', 'dsh-panel-activate']) {
+  for (const needle of ['newSession', 'newSessionLabel', 'centerCol', 'dsh-panel-activate', 'cloneNode']) {
     assert.ok(src.includes(needle), `потерян селектор оболочки: ${needle}`)
   }
 })

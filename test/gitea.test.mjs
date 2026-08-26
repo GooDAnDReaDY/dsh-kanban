@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  createGiteaClient, normalizeBaseUrl, safeSegment, isCredentialName, looksLikeSecret,
+  createGiteaClient, normalizeBaseUrl, safeSegment, isCredentialName, looksLikeSecret, rankRepos,
 } from '../lib/gitea.js'
 
 /** Клиент с подменённой сетью: ни одного реального запроса в тестах. */
@@ -142,12 +142,29 @@ test('в поле имени вписали сам токен — готовно
   assert.equal(await gitea.isConfigured(), false)
 })
 
-test('поиск репозиториев приводит ответ к тройке владелец-репозиторий-имя', async () => {
+test('поиск репозиториев разбирает ответ инстанса', async () => {
   const { gitea } = stubClient(() => okJson({
-    data: [{ name: 'dsh-kanban', full_name: 'goodandready/dsh-kanban', owner: { login: 'goodandready' } }],
+    data: [{
+      name: 'dsh-kanban', full_name: 'goodandready/dsh-kanban', owner: { login: 'goodandready' },
+      open_issues_count: 3, updated_at: '2026-08-26T10:00:00Z', archived: false,
+    }],
   }))
   const rows = await gitea.searchRepos({ query: 'kanban' })
-  assert.deepEqual(rows, [{ owner: 'goodandready', repo: 'dsh-kanban', fullName: 'goodandready/dsh-kanban' }])
+  assert.equal(rows.length, 1)
+  assert.equal(rows[0].owner, 'goodandready')
+  assert.equal(rows[0].repo, 'dsh-kanban')
+  assert.equal(rows[0].fullName, 'goodandready/dsh-kanban')
+  assert.equal(rows[0].openIssues, 3)
+  assert.equal(rows[0].archived, false)
+})
+
+test('отсутствие счётчика в ответе читается как ноль, а не как undefined', async () => {
+  const { gitea } = stubClient(() => okJson({
+    data: [{ name: 'r', full_name: 'o/r', owner: { login: 'o' } }],
+  }))
+  const rows = await gitea.searchRepos({ query: '' })
+  assert.equal(rows[0].openIssues, 0)
+  assert.equal(rows[0].archived, false)
 })
 
 test('комментарий и метки уходят нужным методом', async () => {
@@ -168,4 +185,71 @@ test('комментарий и метки уходят нужным метод�
 test('пустое тело ответа не роняет разбор', async () => {
   const { gitea } = stubClient(() => ({ ok: true, status: 204, text: async () => '' }))
   assert.equal(await gitea.closeIssue({ owner: 'o', repo: 'r', index: 3 }), null)
+})
+
+test('репозитории с открытыми задачами идут первыми', () => {
+  const out = rankRepos([
+    { fullName: 'o/тихий', openIssues: 0, updatedAt: '2026-08-26T10:00:00Z' },
+    { fullName: 'o/живой', openIssues: 3, updatedAt: '2026-08-01T10:00:00Z' },
+  ])
+  assert.deepEqual(out.map((r) => r.fullName), ['o/живой', 'o/тихий'])
+})
+
+test('при равном признаке решает время последней правки', () => {
+  const out = rankRepos([
+    { fullName: 'o/старый', openIssues: 2, updatedAt: '2026-08-01T10:00:00Z' },
+    { fullName: 'o/свежий', openIssues: 5, updatedAt: '2026-08-26T10:00:00Z' },
+  ])
+  assert.deepEqual(out.map((r) => r.fullName), ['o/свежий', 'o/старый'])
+})
+
+test('архивные уходят вниз, даже если в них есть задачи', () => {
+  const out = rankRepos([
+    { fullName: 'o/архив', openIssues: 9, updatedAt: '2026-08-26T10:00:00Z', archived: true },
+    { fullName: 'o/тихий', openIssues: 0, updatedAt: '2026-01-01T10:00:00Z' },
+  ])
+  assert.deepEqual(out.map((r) => r.fullName), ['o/тихий', 'o/архив'])
+})
+
+test('ранжирование не портит исходный массив', () => {
+  const input = [{ fullName: 'b', openIssues: 0 }, { fullName: 'a', openIssues: 1 }]
+  rankRepos(input)
+  assert.deepEqual(input.map((r) => r.fullName), ['b', 'a'])
+})
+
+test('ранжирование переживает пустоту и нехватку полей', () => {
+  assert.deepEqual(rankRepos(undefined), [])
+  assert.equal(rankRepos([{ fullName: 'a' }, { fullName: 'b' }]).length, 2)
+})
+
+test('репозитории собираются со всех страниц', async () => {
+  // Одной страницы мало: без перелистывания хвост теряется молча.
+  const pages = {
+    1: Array.from({ length: 50 }, (_, i) => ({ name: 'r' + i, full_name: 'o/r' + i, owner: { login: 'o' } })),
+    2: [{ name: 'хвост', full_name: 'o/хвост', owner: { login: 'o' }, open_issues_count: 1 }],
+  }
+  const seen = []
+  const gitea = createGiteaClient({
+    getConfig: () => ({ giteaUrl: 'https://example.invalid', giteaTokenRef: 'GITEA_TOKEN' }),
+    resolveToken: async () => 'секрет',
+    fetchImpl: async (url) => {
+      const page = Number(new URL(url).searchParams.get('page'))
+      seen.push(page)
+      return okJson({ data: pages[page] ?? [] })
+    },
+  })
+  const rows = await gitea.searchRepos({ query: '' })
+  assert.deepEqual(seen, [1, 2])
+  assert.equal(rows.length, 51)
+  assert.equal(rows[0].fullName, 'o/хвост', 'репозиторий с задачами обязан быть первым')
+})
+
+test('число открытых задач берётся из того же ответа', async () => {
+  const gitea = createGiteaClient({
+    getConfig: () => ({ giteaUrl: 'https://example.invalid', giteaTokenRef: 'GITEA_TOKEN' }),
+    resolveToken: async () => 'секрет',
+    fetchImpl: async () => okJson({ data: [{ name: 'r', full_name: 'o/r', owner: { login: 'o' }, open_issues_count: 7 }] }),
+  })
+  const rows = await gitea.searchRepos({ query: '' })
+  assert.equal(rows[0].openIssues, 7)
 })
