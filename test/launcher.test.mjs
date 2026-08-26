@@ -48,10 +48,71 @@ test('своя задача без issue не порождает undefined и л
   assert.ok(text.includes('Прибраться в логах'))
 })
 
+test('своей задаче НЕ приказывают делать preflight и worktree', () => {
+  // Задача «привет» не имеет ни репозитория, ни issue. Распоряжение про
+  // preflight отправляло агента искать репозитории вместо работы по written.
+  const text = buildStartMessage({ title: 'привет' }, withDefaults({}))
+  assert.ok(!text.includes('preflight'), 'своей задаче достался хвост про воркфлоу')
+  assert.ok(!text.includes('worktree'))
+  assert.ok(!text.includes('origin/main'))
+  assert.ok(text.includes('привет'))
+})
+
+test('задача из issue хвост про воркфлоу получает', () => {
+  const text = buildStartMessage(
+    { title: 'A', repo: 'r', issueNumber: 7, issueUrl: 'https://example.invalid/i/7' },
+    withDefaults({}))
+  assert.ok(text.includes('preflight'))
+  assert.ok(text.includes('r#7'))
+  assert.ok(text.includes('https://example.invalid/i/7'))
+})
+
+test('постоянная приписка добавляется к обоим видам задач', () => {
+  const cfg = withDefaults({ replyInstruction: 'Отвечай по-русски.' })
+  assert.ok(buildStartMessage({ title: 'привет' }, cfg).endsWith('Отвечай по-русски.'))
+  assert.ok(buildStartMessage({ title: 'A', repo: 'r', issueNumber: 1 }, cfg).endsWith('Отвечай по-русски.'))
+})
+
+test('пустая приписка ничего не дописывает', () => {
+  const text = buildStartMessage({ title: 'привет' }, withDefaults({ replyInstruction: '   ' }))
+  assert.ok(text.startsWith('Задача: привет'))
+  assert.ok(!text.includes('Отвечай'))
+})
+
+test('своей задаче воркфлоу предлагается по условию, а не приказывается', () => {
+  // Задача может быть любой — «найди мне информацию» в том числе. Решает агент
+  // по содержанию, а не доска заранее.
+  const text = buildStartMessage({ title: 'найди мне информацию про X' }, withDefaults({}))
+  assert.ok(text.includes('Если задача окажется про код проекта'))
+  assert.ok(!text.includes('preflight'))
+})
+
+test('приписка добавляется и к своему шаблону', () => {
+  const text = buildStartMessage({ title: 'A' },
+    withDefaults({ startPrompt: 'Сделай {title}', replyInstruction: 'По-русски.' }))
+  assert.ok(text.startsWith('Сделай A'))
+  assert.ok(text.endsWith('По-русски.'))
+  assert.ok(!text.includes('Задача:'), 'свой шаблон не должен обрастать встроенным')
+})
+
+test('между кусками нет пустых провалов', () => {
+  // Пустое тело задачи не должно оставлять дыру в три перевода строки.
+  const gap = String.fromCharCode(10, 10, 10)
+  const text = buildStartMessage({ title: 'A', body: '' }, withDefaults({ replyInstruction: '' }))
+  assert.ok(!text.includes(gap), 'в сообщении осталась пустая дыра')
+})
+
 test('свой шаблон вытесняет встроенный', () => {
   const text = buildStartMessage({ title: 'A', repo: 'r', issueNumber: 1 },
-    withDefaults({ startPrompt: 'Сделай {title} в {repo}' }))
+    withDefaults({ startPrompt: 'Сделай {title} в {repo}', replyInstruction: '' }))
   assert.equal(text, 'Сделай A в r')
+})
+
+test('свой шаблон не обрастает ни воркфлоу, ни условием', () => {
+  const text = buildStartMessage({ title: 'A', repo: 'r', issueNumber: 1 },
+    withDefaults({ startPrompt: 'Сделай {title}', replyInstruction: '' }))
+  assert.ok(!text.includes('preflight'))
+  assert.ok(!text.includes('Если задача окажется'))
 })
 
 test('сообщение не называет имя ветки', () => {
@@ -61,7 +122,7 @@ test('сообщение не называет имя ветки', () => {
   assert.ok(!/fix\//.test(text))
 })
 
-test('сообщение велит начать с preflight', () => {
+test('сообщение задачи из issue велит начать с preflight', () => {
   const text = buildStartMessage({ repo: 'r', issueNumber: 1, title: 'A' }, withDefaults({}))
   assert.ok(text.includes('preflight'))
 })
