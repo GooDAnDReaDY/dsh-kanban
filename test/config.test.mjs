@@ -84,3 +84,16 @@ test('доступ к полям переживает отсутствие на�
   assert.equal(columnLabelField(undefined, 'review'), '')
   assert.equal(wipLimitField(undefined, 'in-progress'), undefined)
 })
+
+test('автоперемещение включено, инструмент агента — нет', () => {
+  const cfg = withDefaults({})
+  assert.equal(cfg.syncIntervalSec, 120)
+  // Инструмент выключен намеренно: скилл воркфлоу пока запрещает этому CLI
+  // трогать канбан, и включать его раньше правки скилла нельзя.
+  assert.equal(cfg.boardToolEnabled, false)
+})
+
+test('булева настройка остаётся булевой при мусоре на входе', () => {
+  assert.equal(withDefaults({ boardToolEnabled: 'да' }).boardToolEnabled, false)
+  assert.equal(withDefaults({ boardToolEnabled: true }).boardToolEnabled, true)
+})
