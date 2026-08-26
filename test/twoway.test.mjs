@@ -6,7 +6,14 @@ import { withDefaults } from '../lib/config.js'
 import { resolveConflict } from '../lib/transitions.js'
 import { verifySignature, parseEvent } from '../lib/webhook.js'
 import { planOutbound, createOutbox } from '../lib/outbound.js'
+import { createGiteaClient } from '../lib/gitea.js'
 import { applyObservation } from '../lib/sync.js'
+
+const okJson = (body, status = 200) => ({
+  ok: status >= 200 && status < 300,
+  status,
+  text: async () => JSON.stringify(body),
+})
 
 // ----------------------------------------------------------- разрешение конфликтов
 
@@ -272,3 +279,53 @@ function createSignature(secret, body) {
   // Тот же расчёт, что делает Gitea на своей стороне.
   return createHmac('sha256', secret).update(body).digest('hex')
 }
+
+test('метки назначаются идентификаторами, а не именами', async () => {
+  // API назначения принимает ИДЕНТИФИКАТОРЫ. Запрос с именами проходит с
+  // успешным кодом и не делает ничего — молчаливая пустая работа.
+  const seen = []
+  const gitea = createGiteaClient({
+    getConfig: () => ({ giteaUrl: 'https://example.invalid', giteaTokenRef: 'GITEA_TOKEN' }),
+    resolveToken: async () => 'секрет',
+    fetchImpl: async (url, options) => {
+      seen.push({ url, method: options.method, body: options.body })
+      if (url.endsWith('/labels?limit=100')) {
+        return okJson([{ id: 11, name: 'bug' }, { id: 22, name: 'kanban/review' }])
+      }
+      return okJson({})
+    },
+  })
+  await gitea.setLabels({ owner: 'o', repo: 'r', index: 7, labels: ['bug', 'kanban/review'] })
+  const put = seen.find((c) => c.method === 'PUT')
+  assert.deepEqual(JSON.parse(put.body).labels, [11, 22])
+})
+
+test('недостающая своя метка заводится, чужая — нет', async () => {
+  const created = []
+  const gitea = createGiteaClient({
+    getConfig: () => ({ giteaUrl: 'https://example.invalid', giteaTokenRef: 'GITEA_TOKEN' }),
+    resolveToken: async () => 'секрет',
+    fetchImpl: async (url, options) => {
+      if (url.endsWith('/labels?limit=100')) return okJson([])
+      if (options.method === 'POST' && url.endsWith('/labels')) {
+        const body = JSON.parse(options.body)
+        created.push(body.name)
+        return okJson({ id: 99, name: body.name })
+      }
+      return okJson({})
+    },
+  })
+  await gitea.setLabels({
+    owner: 'o', repo: 'r', index: 7,
+    labels: ['kanban/review', 'чужая-метка'],
+    creatable: ['kanban/review'],
+  })
+  assert.deepEqual(created, ['kanban/review'], 'доска завела чужую метку')
+})
+
+test('план отправки называет свои метки создаваемыми', () => {
+  const ops = planOutbound(
+    { issueNumber: 7, owner: 'o', repo: 'r', labels: [] }, 'review', withDefaults({}))
+  assert.ok(ops[0].creatable.includes('kanban/review'))
+  assert.ok(!ops[0].creatable.includes('bug'))
+})
