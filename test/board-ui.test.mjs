@@ -167,3 +167,15 @@ test('негодное полное имя не даёт пары, а не по�
   assert.equal(h.splitFullName(''), undefined)
   assert.equal(h.splitFullName(undefined), undefined)
 })
+
+test('подпись репозитория показывает число открытых задач', () => {
+  const t = (k) => ({ 'dialog.archived': 'архив' })[k] ?? k
+  assert.equal(h.repoOption({ fullName: 'o/r', openIssues: 4 }, t), 'o/r · 4')
+  assert.equal(h.repoOption({ fullName: 'o/r', openIssues: 0 }, t), 'o/r')
+  assert.equal(h.repoOption({ fullName: 'o/r', openIssues: 2, archived: true }, t), 'o/r · 2 · архив')
+})
+
+test('подпись собирается и без полного имени', () => {
+  const t = (k) => k
+  assert.equal(h.repoOption({ owner: 'o', repo: 'r' }, t), 'o/r')
+})
