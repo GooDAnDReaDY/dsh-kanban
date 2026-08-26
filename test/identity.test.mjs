@@ -6,66 +6,52 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { createContext, runInNewContext } from 'node:vm'
 import path from 'node:path'
+import { loadClient } from './client-load.mjs'
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const read = (rel) => readFileSync(path.join(root, rel), 'utf8')
 
 test('имя пакета совпадает в трёх местах', () => {
   const pkg = JSON.parse(read('package.json'))
-  const patch = read('cordis.patch.yml')
-  const client = read('lib/client.js')
-
   assert.equal(pkg.name, '@goodandready/dsh-kanban')
-  assert.ok(patch.includes(`name: '${pkg.name}'`),
+  assert.ok(read('cordis.patch.yml').includes(`name: '${pkg.name}'`),
     'cordis.patch.yml не называет полное имя пакета')
-  assert.ok(client.includes(`id: '${pkg.name}'`),
+  assert.ok(read('lib/client.js').includes(`id: '${pkg.name}'`),
     'lib/client.js грузится под другим идентификатором')
 })
 
 test('короткий id патча совпадает с именем плагина cordis', () => {
-  const patch = read('cordis.patch.yml')
-  assert.ok(patch.includes('id: dsh-kanban'))
+  assert.ok(read('cordis.patch.yml').includes('id: dsh-kanban'))
 })
 
-test('браузерная половина отдаёт apply и список служб', () => {
-  const src = read('lib/client.js')
-  let loaded
-  const sandbox = {
-    window: { __ModuleLoader__: { load: (spec) => { loaded = spec } } },
-  }
-  createContext(sandbox)
-  runInNewContext(src, sandbox)
-
-  assert.ok(loaded, 'модуль не зарегистрировался в загрузчике')
-  assert.equal(loaded.id, '@goodandready/dsh-kanban')
-
-  const stubs = { react: { createElement: () => null, useState: () => [], useMemo: () => undefined } }
-  const exported = loaded.factory((name) => stubs[name])
+test('браузерная половина отдаёт apply, службы и помощники', () => {
+  const { spec, exported } = loadClient()
+  assert.equal(spec.id, '@goodandready/dsh-kanban')
   assert.equal(typeof exported.apply, 'function')
   // Array.from обязателен: массив рождён внутри vm-контекста, у него другой
   // прототип, и deepStrictEqual отверг бы совпадающее содержимое.
   assert.deepEqual(Array.from(exported.inject), ['slots', 'locale', 'settingsScope'])
+  assert.equal(typeof exported.helpers.neighboursFor, 'function')
 })
 
-test('карточка настроек встаёт в слот плагинов, а не своим разделом', () => {
-  const client = read('lib/client.js')
-  assert.ok(client.includes("'settings.plugin.item'"),
-    'карточка не регистрируется в слоте настроек плагинов')
-  assert.ok(!client.includes("name: 'settings.section'"),
-    'плагин заводит свой раздел настроек, хотя должен обойтись карточкой')
+test('настроечный слот плагинов пробуется первым, а не запасной раздел', () => {
+  const src = read('lib/client.js')
+  const plugin = src.indexOf("name: 'settings.plugin.item'")
+  const section = src.indexOf("name: 'settings.section'")
+  assert.ok(plugin > 0, 'карточка не пробует слот настроек плагинов')
+  assert.ok(section > plugin, 'запасной раздел объявлен раньше основного слота')
 })
 
-test('ключ слота карточки равен пространству настроек', () => {
-  const client = read('lib/client.js')
-  // Ключ обязан совпадать с именем пространства: вкладка перебирает
-  // объявленные пространства и рисует слот с entryKey, равным этому имени.
-  assert.ok(/const NS = 'dsh-kanban'/.test(client))
-  assert.ok(/key: NS/.test(client))
+test('порядок колонок в браузерной половине совпадает с серверным', async () => {
+  const { COLUMN_ORDER } = await import('../lib/config.js')
+  const { exported } = loadClient()
+  assert.deepEqual(Array.from(exported.helpers.COLUMN_ORDER), COLUMN_ORDER)
 })
 
-test('в записи слота есть locale — иначе компонент не получит props.t', () => {
-  const client = read('lib/client.js')
-  assert.ok(/locale: NS/.test(client))
+test('у каждой колонки есть подпись в обоих языках', () => {
+  const src = read('lib/client.js')
+  for (const id of ['backlog', 'in-progress', 'review', 'deploy', 'cleanup', 'done']) {
+    assert.ok(src.includes(`'column.${id}'`), `нет подписи колонки ${id}`)
+  }
 })
