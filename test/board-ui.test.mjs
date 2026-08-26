@@ -131,3 +131,39 @@ test('когда ни одного слота нет, регистрация н�
   assert.doesNotThrow(() => exported.apply(ctx))
   assert.equal(registered.length, 0)
 })
+
+test('поиск ищет по заголовку, репозиторию, номеру и меткам', () => {
+  const task = { title: 'Дробный индекс', repo: 'dsh-kanban', issueNumber: 12, labels: ['feat', 'p2'] }
+  assert.equal(h.matchesQuery(task, 'дробн'), true)
+  assert.equal(h.matchesQuery(task, 'KANBAN'), true, 'поиск обязан быть регистронезависимым')
+  assert.equal(h.matchesQuery(task, '#12'), true)
+  assert.equal(h.matchesQuery(task, 'feat'), true)
+  assert.equal(h.matchesQuery(task, 'чего-то нет'), false)
+})
+
+test('пустой поиск пропускает всё, включая пробелы', () => {
+  const task = { title: 'A' }
+  assert.equal(h.matchesQuery(task, ''), true)
+  assert.equal(h.matchesQuery(task, '   '), true)
+  assert.equal(h.matchesQuery(task, undefined), true)
+})
+
+test('поиск переживает задачу без полей', () => {
+  assert.equal(h.matchesQuery({}, 'что-нибудь'), false)
+  assert.equal(h.matchesQuery({}, ''), true)
+})
+
+test('владелец и репозиторий разбираются из полного имени', () => {
+  // Владельца отдельным полем не спрашиваем: он следует из выбора.
+  assert.deepEqual({ ...h.splitFullName('goodandready/dsh-kanban') },
+    { owner: 'goodandready', repo: 'dsh-kanban' })
+})
+
+test('негодное полное имя не даёт пары, а не половину', () => {
+  assert.equal(h.splitFullName('dsh-kanban'), undefined)
+  assert.equal(h.splitFullName('/dsh-kanban'), undefined)
+  assert.equal(h.splitFullName('goodandready/'), undefined)
+  assert.equal(h.splitFullName('a/b/c'), undefined)
+  assert.equal(h.splitFullName(''), undefined)
+  assert.equal(h.splitFullName(undefined), undefined)
+})
