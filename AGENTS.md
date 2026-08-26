@@ -68,3 +68,11 @@ a move would rewrite every row in the column. The SQL column is `col`, not
 `startTask` creates the session, waits for idle, sends the first message and
 only then writes to the store. Do not reorder: writing first parks a task in
 progress with no session when a start fails.
+
+## Values crossing into core APIs
+
+Where a value is handed to a core API, tests must assert its SHAPE, not just
+that the expected text is somewhere inside. A message content string passes
+`content.includes('...')` exactly as an array of blocks does, and the core then
+fails at runtime with `content.some is not a function`. Assert the array, the
+block objects and the field names.

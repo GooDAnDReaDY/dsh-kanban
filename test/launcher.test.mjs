@@ -105,7 +105,12 @@ test('startTask поднимает сессию и переносит задач
   assert.equal(saved.model, 'claude-opus-5')
   assert.equal(saved.sessionId, 'kanban-live-1')
   assert.equal(sent.length, 1)
-  assert.ok(sent[0].content.includes('A'))
+  // Проверяем именно ФОРМУ: строка тоже имеет includes, и прежняя проверка
+  // пропустила бы её — а ядро на строке падает с «content.some is not a function».
+  assert.ok(Array.isArray(sent[0].content), 'содержимое обязано быть массивом блоков')
+  assert.equal(sent[0].content.length, 1)
+  assert.equal(sent[0].content[0].type, 'text')
+  assert.ok(sent[0].content[0].text.includes('A'))
   assert.equal(sent[0].source.plugin, 'dsh-kanban')
   const log = store.listTransitions(task.id)
   assert.equal(log[0].source, 'session')
@@ -168,4 +173,20 @@ test('без модели маршрут отказывает внятно, а �
   const out = resolveModel({ requested: {}, fallback: {} })
   assert.equal(out.status, 409)
   assert.equal(out.error, 'model-not-selected')
+})
+
+test('первое сообщение — массив блоков, а не строка', async () => {
+  // Ядро перебирает содержимое как список. Строка проходит все проверки на
+  // «текст внутри есть» и роняет ход уже в работе.
+  const { store, cleanup } = freshStore()
+  const { agents, sent } = stubAgents()
+  const task = store.createTask({ board: 'main', column: 'backlog', title: 'привет', repo: 'r' })
+  await startTask({
+    agents, store, task, config, provider: 'p', model: 'm',
+    sessionId: 'kanban-1-abc', createMessage,
+  })
+  const content = sent[0].content
+  assert.ok(Array.isArray(content))
+  assert.equal(typeof content.some, 'function', 'ядро зовёт content.some — у строки его нет')
+  assert.ok(content.every((b) => typeof b === 'object' && typeof b.type === 'string'))
 })
