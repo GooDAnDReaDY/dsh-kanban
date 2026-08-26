@@ -168,18 +168,20 @@ test('отсутствие счётчика в ответе читается к�
 })
 
 test('комментарий и метки уходят нужным методом', async () => {
-  const { gitea, calls } = stubClient(() => okJson({}))
+  // Вызовы ищутся по назначению, а не по порядковому номеру: назначению меток
+  // предшествует чтение их идентификаторов, и номера сдвигаются.
+  const { gitea, calls } = stubClient(() => okJson([]))
   await gitea.comment({ owner: 'o', repo: 'r', index: 3, body: 'привет' })
-  assert.equal(calls[0].options.method, 'POST')
-  assert.ok(calls[0].url.endsWith('/issues/3/comments'))
+  const comment = calls.find((c) => c.url.endsWith('/issues/3/comments'))
+  assert.equal(comment.options.method, 'POST')
 
   await gitea.setLabels({ owner: 'o', repo: 'r', index: 3, labels: ['kanban/review'] })
-  assert.equal(calls[1].options.method, 'PUT')
-  assert.ok(calls[1].url.endsWith('/issues/3/labels'))
+  const labels = calls.find((c) => c.url.endsWith('/issues/3/labels'))
+  assert.equal(labels.options.method, 'PUT')
 
   await gitea.closeIssue({ owner: 'o', repo: 'r', index: 3 })
-  assert.equal(calls[2].options.method, 'PATCH')
-  assert.equal(JSON.parse(calls[2].options.body).state, 'closed')
+  const close = calls.find((c) => c.options.method === 'PATCH')
+  assert.equal(JSON.parse(close.options.body).state, 'closed')
 })
 
 test('пустое тело ответа не роняет разбор', async () => {
