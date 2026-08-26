@@ -76,3 +76,23 @@ that the expected text is somewhere inside. A message content string passes
 `content.includes('...')` exactly as an array of blocks does, and the core then
 fails at runtime with `content.some is not a function`. Assert the array, the
 block objects and the field names.
+
+## Gitea labels
+
+The label assignment endpoint takes label IDs, not names. A request carrying
+names answers with a success code and does nothing. Resolve names to ids first,
+and create only our own kanban/* labels — foreign process labels are assigned
+only when they already exist.
+
+## Observations
+
+Never swallow a read failure while observing a repository. A partial observation
+is worse than none: unread pulls look like no pull and drag a card back out of
+review; unread branches look like cleanup done and declare a task finished. Skip
+the repository whole until the next pass.
+
+## Conflicts
+
+When both sides changed, the later change wins and the losing side must be
+written into the task log. A synchronisation that quietly undoes someone's edit
+is worse than none.
