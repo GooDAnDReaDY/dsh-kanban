@@ -86,11 +86,16 @@ test('refresh не сбрасывает локальные поля', () => {
   assert.equal(patch.model, undefined)
 })
 
-test('состояние службы Gitea различает отсутствие и ненастроенность', () => {
-  assert.equal(giteaState(undefined), 'absent')
-  assert.equal(giteaState(null), 'absent')
-  assert.equal(giteaState({ isConfigured: () => false }), 'unconfigured')
-  assert.equal(giteaState({ isConfigured: () => true }), 'ready')
+test('состояние клиента Gitea различает отсутствие и ненастроенность', async () => {
+  assert.equal(await giteaState(undefined), 'absent')
+  assert.equal(await giteaState(null), 'absent')
+  assert.equal(await giteaState({ isConfigured: () => false }), 'unconfigured')
+  assert.equal(await giteaState({ isConfigured: () => true }), 'ready')
+  assert.equal(await giteaState({ isConfigured: async () => true }), 'ready')
+})
+
+test('падение проверки готовности читается как ненастроенность, а не как отказ', async () => {
+  assert.equal(await giteaState({ isConfigured: () => { throw new Error('нет службы') } }), 'unconfigured')
 })
 
 test('импорт без службы объясняет причину, а не отдаёт пустой список', async () => {
