@@ -179,3 +179,31 @@ test('подпись собирается и без полного имени', 
   const t = (k) => k
   assert.equal(h.repoOption({ owner: 'o', repo: 'r' }, t), 'o/r')
 })
+
+test('открытие чата: без службы сессий честно возвращает отказ', () => {
+  // Служба берётся через get, а не через inject: её отсутствие не должно
+  // мешать доске загрузиться, но человеку об этом надо сказать.
+  assert.equal(h.openSession({ get: () => undefined }, 'kanban-1'), false)
+  assert.equal(h.openSession({}, 'kanban-1'), false)
+  assert.equal(h.openSession(undefined, 'kanban-1'), false)
+})
+
+test('открытие чата: без идентификатора сессии не зовёт службу', () => {
+  let called = false
+  const ctx = { get: () => ({ open: () => { called = true } }) }
+  assert.equal(h.openSession(ctx, ''), false)
+  assert.equal(h.openSession(ctx, undefined), false)
+  assert.equal(called, false)
+})
+
+test('открытие чата: служба зовётся с идентификатором сессии', () => {
+  const seen = []
+  const ctx = { get: (name) => (name === 'sessions' ? { open: (id) => seen.push(id) } : undefined) }
+  assert.equal(h.openSession(ctx, 'kanban-42'), true)
+  assert.deepEqual(seen, ['kanban-42'])
+})
+
+test('открытие чата: падение службы не роняет доску', () => {
+  const ctx = { get: () => ({ open: () => { throw new Error('нет такой сессии') } }) }
+  assert.equal(h.openSession(ctx, 'kanban-1'), false)
+})
