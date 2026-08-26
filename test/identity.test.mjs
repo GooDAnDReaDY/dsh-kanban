@@ -43,6 +43,15 @@ test('настроечный слот плагинов пробуется пер
   assert.ok(section > plugin, 'запасной раздел объявлен раньше основного слота')
 })
 
+test('встраивание в оболочку опирается на объявленные селекторы', () => {
+  // Приём хрупкий: он держится на вёрстке чужой оболочки. Если селекторы
+  // исчезнут при правке, доска молча перестанет появляться — тест это ловит.
+  const src = readFileSync(path.join(root, 'lib/client.js'), 'utf8')
+  for (const needle of ['data-pane="sidebar"', 'centerCol', 'newSession', 'logoRow', 'dsh-panel-activate']) {
+    assert.ok(src.includes(needle), `потерян селектор оболочки: ${needle}`)
+  }
+})
+
 test('порядок колонок в браузерной половине совпадает с серверным', async () => {
   const { COLUMN_ORDER } = await import('../lib/config.js')
   const { exported } = loadClient()

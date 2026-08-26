@@ -94,19 +94,36 @@ test('без слота плагинов карточка уходит в зап
   assert.ok(registered.some((e) => e.name === 'settings.section'))
 })
 
-test('доска встаёт в раздел верхнего уровня, когда он есть', () => {
-  const { ctx, registered } = stubCtx({ available: ['settings.plugin.item', 'app.section'] })
+test('доска больше не занимает слот настроек', () => {
+  // Раздела верхнего уровня в сборке нет, а настройки — не место для доски:
+  // она встраивается прямо в оболочку.
+  const { ctx, registered } = stubCtx({ available: ['settings.plugin.item', 'settings.section'] })
   exported.apply(ctx)
-  const board = registered.find((e) => e.id === '@goodandready/dsh-kanban.board')
-  assert.ok(board)
-  assert.equal(board.name, 'app.section')
+  assert.equal(registered.filter((e) => e.id === '@goodandready/dsh-kanban.board').length, 0)
 })
 
-test('доска не теряется, даже если раздела верхнего уровня нет', () => {
-  const { ctx, registered } = stubCtx({ available: ['settings.section'] })
-  exported.apply(ctx)
-  const board = registered.find((e) => e.id === '@goodandready/dsh-kanban.board')
-  assert.ok(board, 'доска не зарегистрирована ни в один слот')
+test('без DOM встраивание молча ничего не делает и не падает', () => {
+  // В тестах документа нет; плагин обязан пережить это, а не рухнуть.
+  const { ctx } = stubCtx({ available: ['settings.plugin.item'] })
+  assert.doesNotThrow(() => exported.apply(ctx))
+})
+
+test('переключатель доски уведомляет подписчиков только при смене', () => {
+  const toggle = exported.helpers.createToggle()
+  let calls = 0
+  const off = toggle.subscribe(() => { calls += 1 })
+  assert.equal(toggle.isOpen(), false)
+  toggle.set(true)
+  assert.equal(toggle.isOpen(), true)
+  assert.equal(calls, 1)
+  toggle.set(true)
+  assert.equal(calls, 1, 'повторная установка того же значения будит подписчиков')
+  toggle.toggle()
+  assert.equal(toggle.isOpen(), false)
+  assert.equal(calls, 2)
+  off()
+  toggle.set(true)
+  assert.equal(calls, 2, 'отписка не сработала')
 })
 
 test('когда ни одного слота нет, регистрация не роняет плагин', () => {
