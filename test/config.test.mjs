@@ -97,3 +97,12 @@ test('булева настройка остаётся булевой при м�
   assert.equal(withDefaults({ boardToolEnabled: 'да' }).boardToolEnabled, false)
   assert.equal(withDefaults({ boardToolEnabled: true }).boardToolEnabled, true)
 })
+
+test('каждому умолчанию соответствует свой тип узла схемы', () => {
+  // Схема собирается из умолчаний по их типу. Незамеченный тип объявляется
+  // строкой, и плагин не загружается вовсе с «invalid config» — тестами это
+  // не ловится, поэтому сторожим сам набор типов.
+  const kinds = new Set(Object.values(CONFIG_DEFAULTS).map((v) => typeof v))
+  assert.deepEqual([...kinds].sort(), ['boolean', 'number', 'string'],
+    'появился тип умолчания, для которого в схеме нет узла')
+})
