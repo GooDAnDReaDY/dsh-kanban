@@ -2,28 +2,44 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { freshStore } from './helpers.mjs'
 import { withDefaults } from '../lib/config.js'
-import { buildStartMessage, resolveCwd, startTask, resolveModel } from '../lib/launcher.js'
+import { buildStartMessage, resolveCwd, runTask, obtainAgent, resolveModel } from '../lib/launcher.js'
 
 const config = withDefaults({ defaultProjectRoot: '/projects' })
 
-/** Заглушка службы агентов: ни одной живой сессии в тестах. */
-function stubAgents(onCreate) {
+/**
+ * Заглушка службы агентов.
+ *
+ * По умолчанию живых сессий нет и возобновление не удаётся — то есть каждый
+ * запуск поднимает новую. Отдельные проверки подменяют `live` и `resumable`.
+ */
+function stubAgents({ onCreate, live, resumable } = {}) {
   const sent = []
+  const calls = { create: 0, get: 0, resume: 0 }
+  const makeAgent = (id) => ({
+    whenIdle: async () => {},
+    followup: (m) => sent.push(m),
+    session: { id },
+  })
   const agents = {
-    create: async (opts) => {
+    get(id) {
+      calls.get += 1
+      return live === id ? makeAgent(id) : undefined
+    },
+    async resume({ resumeSessionId }) {
+      calls.resume += 1
+      if (resumable !== resumeSessionId) throw new Error('сессия не сохранена')
+      return { agent: makeAgent(resumeSessionId), dispose() {} }
+    },
+    async create(opts) {
+      calls.create += 1
       if (onCreate) onCreate(opts)
-      return {
-        agent: {
-          whenIdle: async () => {},
-          followup: (m) => sent.push(m),
-          session: { id: 'kanban-live-1' },
-        },
-        dispose() {},
-      }
+      return { agent: makeAgent('kanban-live-1'), dispose() {} }
     },
   }
-  return { agents, sent }
+  return { agents, sent, calls }
 }
+
+const mintSessionId = () => 'kanban-live-1'
 
 const createMessage = (m) => m
 
@@ -156,9 +172,9 @@ test('startTask поднимает сессию и переносит задач
   const { store, cleanup } = freshStore()
   const { agents, sent } = stubAgents()
   const task = store.createTask({ board: 'main', column: 'backlog', title: 'A', repo: 'r' })
-  const out = await startTask({
+  const out = await runTask({
     agents, store, task, config, provider: 'anthropic', model: 'claude-opus-5',
-    sessionId: 'kanban-1-abc', createMessage,
+    mintSessionId, createMessage,
   })
   assert.equal(out.sessionId, 'kanban-live-1')
   const saved = store.getTask(task.id)
@@ -182,11 +198,11 @@ test('startTask поднимает сессию и переносит задач
 test('startTask отдаёт агенту рабочую папку абсолютным путём', async () => {
   const { store, cleanup } = freshStore()
   let seen
-  const { agents } = stubAgents((opts) => { seen = opts })
+  const { agents } = stubAgents({ onCreate: (opts) => { seen = opts } })
   const task = store.createTask({ board: 'main', column: 'backlog', title: 'A', repo: 'r' })
-  await startTask({
+  await runTask({
     agents, store, task, config, provider: 'p', model: 'm',
-    sessionId: 'kanban-1-abc', createMessage,
+    mintSessionId, createMessage,
   })
   assert.equal(seen.meta.cwd, '/projects/r')
   assert.equal(seen.agentOptions.provider, 'p')
@@ -198,9 +214,9 @@ test('падение запуска не двигает карточку', async
   const { store, cleanup } = freshStore()
   const agents = { create: async () => { throw new Error('нет провайдера') } }
   const task = store.createTask({ board: 'main', column: 'backlog', title: 'A', repo: 'r' })
-  await assert.rejects(() => startTask({
+  await assert.rejects(() => runTask({
     agents, store, task, config, provider: 'x', model: 'y',
-    sessionId: 'kanban-1-abc', createMessage,
+    mintSessionId, createMessage,
   }))
   const saved = store.getTask(task.id)
   assert.equal(saved.column, 'backlog')
@@ -213,9 +229,9 @@ test('повторный запуск уже идущей задачи не пл
   const { store, cleanup } = freshStore()
   const { agents } = stubAgents()
   const task = store.createTask({ board: 'main', column: 'in-progress', title: 'A', repo: 'r' })
-  await startTask({
+  await runTask({
     agents, store, task, config, provider: 'p', model: 'm',
-    sessionId: 'kanban-1-abc', createMessage,
+    mintSessionId, createMessage,
   })
   assert.equal(store.listTransitions(task.id).length, 0)
   cleanup()
@@ -242,12 +258,151 @@ test('первое сообщение — массив блоков, а не с�
   const { store, cleanup } = freshStore()
   const { agents, sent } = stubAgents()
   const task = store.createTask({ board: 'main', column: 'backlog', title: 'привет', repo: 'r' })
-  await startTask({
+  await runTask({
     agents, store, task, config, provider: 'p', model: 'm',
-    sessionId: 'kanban-1-abc', createMessage,
+    mintSessionId, createMessage,
   })
   const content = sent[0].content
   assert.ok(Array.isArray(content))
   assert.equal(typeof content.some, 'function', 'ядро зовёт content.some — у строки его нет')
   assert.ok(content.every((b) => typeof b === 'object' && typeof b.type === 'string'))
+})
+
+
+// ------------------------------------------------- одна задача, один чат
+
+test('живая сессия открывается, новая не поднимается', async () => {
+  const { store, cleanup } = freshStore()
+  const { agents, calls } = stubAgents({ live: 'kanban-старая' })
+  const task = store.createTask({ board: 'main', column: 'review', title: 'A', repo: 'r' })
+  store.updateTask(task.id, { sessionId: 'kanban-старая' })
+
+  const out = await runTask({
+    agents, store, task: store.getTask(task.id), config, provider: 'p', model: 'm',
+    mintSessionId, createMessage,
+  })
+  assert.equal(out.mode, 'opened')
+  assert.equal(out.sessionId, 'kanban-старая')
+  assert.equal(calls.create, 0, 'поднята лишняя сессия')
+  cleanup()
+})
+
+test('выгруженная сессия возобновляется, а не заводится заново', async () => {
+  const { store, cleanup } = freshStore()
+  const { agents, calls } = stubAgents({ resumable: 'kanban-сохранённая' })
+  const task = store.createTask({ board: 'main', column: 'in-progress', title: 'A', repo: 'r' })
+  store.updateTask(task.id, { sessionId: 'kanban-сохранённая' })
+
+  const out = await runTask({
+    agents, store, task: store.getTask(task.id), config, provider: 'p', model: 'm',
+    mintSessionId, createMessage,
+  })
+  assert.equal(out.mode, 'resumed')
+  assert.equal(calls.resume, 1)
+  assert.equal(calls.create, 0)
+  cleanup()
+})
+
+test('удалённая сессия заменяется новой, и об этом пишут в журнал', async () => {
+  // Молчаливая подмена чата — худшее: человек вернётся и не поймёт, куда
+  // делась переписка.
+  const { store, cleanup } = freshStore()
+  const { agents } = stubAgents({})
+  const task = store.createTask({ board: 'main', column: 'review', title: 'A', repo: 'r' })
+  store.updateTask(task.id, { sessionId: 'kanban-исчезнувшая' })
+
+  const out = await runTask({
+    agents, store, task: store.getTask(task.id), config, provider: 'p', model: 'm',
+    mintSessionId, createMessage, logger: { warn() {} },
+  })
+  assert.equal(out.mode, 'created')
+  const log = store.listTransitions(task.id)
+  assert.equal(log.length, 1)
+  assert.ok(log[0].detail.includes('не возобновилась'))
+  cleanup()
+})
+
+test('продолжение не откатывает карточку в «в работе»', async () => {
+  // Задача в ревью, нажали «Продолжить» — она обязана остаться в ревью.
+  const { store, cleanup } = freshStore()
+  const { agents } = stubAgents({ live: 'kanban-старая' })
+  const task = store.createTask({ board: 'main', column: 'review', title: 'A', repo: 'r' })
+  store.updateTask(task.id, { sessionId: 'kanban-старая' })
+
+  await runTask({
+    agents, store, task: store.getTask(task.id), config, provider: 'p', model: 'm',
+    mintSessionId, createMessage,
+  })
+  assert.equal(store.getTask(task.id).column, 'review')
+  assert.equal(store.listTransitions(task.id).length, 0)
+  cleanup()
+})
+
+test('первый запуск из бэклога карточку двигает', async () => {
+  const { store, cleanup } = freshStore()
+  const { agents } = stubAgents({})
+  const task = store.createTask({ board: 'main', column: 'backlog', title: 'A', repo: 'r' })
+
+  await runTask({
+    agents, store, task, config, provider: 'p', model: 'm',
+    mintSessionId, createMessage,
+  })
+  assert.equal(store.getTask(task.id).column, 'in-progress')
+  cleanup()
+})
+
+test('текст человека вытесняет встроенную заготовку', async () => {
+  const { store, cleanup } = freshStore()
+  const { agents, sent } = stubAgents({})
+  const task = store.createTask({ board: 'main', column: 'backlog', title: 'A', repo: 'r' })
+
+  await runTask({
+    agents, store, task, config, provider: 'p', model: 'm',
+    mintSessionId, createMessage, text: '  посмотри ревью  ',
+  })
+  assert.equal(sent[0].content[0].text, 'посмотри ревью')
+  cleanup()
+})
+
+test('пустой текст человека возвращает встроенную заготовку', async () => {
+  const { store, cleanup } = freshStore()
+  const { agents, sent } = stubAgents({})
+  const task = store.createTask({ board: 'main', column: 'backlog', title: 'привет', repo: 'r' })
+
+  await runTask({
+    agents, store, task, config, provider: 'p', model: 'm',
+    mintSessionId, createMessage, text: '   ',
+  })
+  assert.ok(sent[0].content[0].text.includes('Задача'))
+  cleanup()
+})
+
+test('идентификатор сессии мнётся только когда сессию правда поднимают', async () => {
+  // Заранее занятое имя при продолжении осталось бы висеть неиспользованным.
+  const { store, cleanup } = freshStore()
+  const { agents } = stubAgents({ live: 'kanban-старая' })
+  const task = store.createTask({ board: 'main', column: 'review', title: 'A', repo: 'r' })
+  store.updateTask(task.id, { sessionId: 'kanban-старая' })
+
+  let minted = 0
+  await runTask({
+    agents, store, task: store.getTask(task.id), config, provider: 'p', model: 'm',
+    mintSessionId: () => { minted += 1; return 'kanban-новая' }, createMessage,
+  })
+  assert.equal(minted, 0)
+  cleanup()
+})
+
+test('задача без сессии живого агента не ищет', async () => {
+  const { store, cleanup } = freshStore()
+  const { agents, calls } = stubAgents({})
+  const task = store.createTask({ board: 'main', column: 'backlog', title: 'A', repo: 'r' })
+
+  const out = await obtainAgent({
+    agents, task, config, provider: 'p', model: 'm', mintSessionId,
+  })
+  assert.equal(out.mode, 'created')
+  assert.equal(calls.get, 0)
+  assert.equal(calls.resume, 0)
+  cleanup()
 })
