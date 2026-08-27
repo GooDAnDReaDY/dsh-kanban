@@ -59,13 +59,13 @@ npm test
 Расхождение имени в трёх местах НЕ даёт ошибки в журнале: серверная половина работает, интерфейса нет.
 
 ```bash
-curl -s http://127.0.0.1:3080/ | grep -c '@goodandready/dsh-kanban'
+curl -s http://127.0.0.1:3080/ | grep -c '@goodandready-private/dsh-kanban'
 ```
 
 Ожидание: больше нуля.
 
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' 'http://127.0.0.1:3080/plugins/@goodandready/dsh-kanban/client.js'
+curl -s -o /dev/null -w '%{http_code}\n' 'http://127.0.0.1:3080/plugins/@goodandready-private/dsh-kanban/client.js'
 ```
 
 Ожидание: `200`.
