@@ -6,6 +6,7 @@ import { columnsOf, normalizeKind, BOARD_KINDS, DEFAULT_BOARDS, COLUMN_ORDER, wi
 import { buildBoard, createTask, taskBySession } from '../lib/routes.js'
 import { importIssue } from '../lib/import.js'
 import { freshStore, reopenStore } from './helpers.mjs'
+import { loadClient } from './client-load.mjs'
 
 const config = withDefaults({})
 
@@ -131,4 +132,30 @@ test('на проектную доску тот же issue импортируе�
   assert.equal(out.error, undefined)
   assert.equal(out.task.issueNumber, 7)
   cleanup()
+})
+
+// ------------------------------------------------- сворачивание колонок (#64)
+
+test('пустая колонка сжимается сама, наполнившаяся разворачивается', () => {
+  const h = loadClient().exported.helpers
+  assert.equal(h.isCollapsed({ id: 'cleanup', count: 0 }, {}), true)
+  assert.equal(h.isCollapsed({ id: 'cleanup', count: 2 }, {}), false)
+})
+
+test('решение человека сильнее автоматики в обе стороны', () => {
+  // Иначе развёрнутая пустая колонка схлопывалась бы у него на глазах.
+  const h = loadClient().exported.helpers
+  assert.equal(h.isCollapsed({ id: 'cleanup', count: 0 }, { cleanup: false }), false)
+  assert.equal(h.isCollapsed({ id: 'review', count: 5 }, { review: true }), true)
+})
+
+test('чужие решения на колонку не влияют', () => {
+  const h = loadClient().exported.helpers
+  assert.equal(h.isCollapsed({ id: 'review', count: 3 }, { cleanup: true }), false)
+  assert.equal(h.isCollapsed({ id: 'review', count: 0 }, undefined), true)
+})
+
+test('колонка без счётчика считается пустой', () => {
+  const h = loadClient().exported.helpers
+  assert.equal(h.isCollapsed({ id: 'review' }, {}), true)
 })
