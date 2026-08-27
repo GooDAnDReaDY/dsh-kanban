@@ -56,3 +56,40 @@ test('обычный чат задачи не получает — это шта
   assert.equal(taskBySession({ store, sessionId: '' }).task, null)
   cleanup()
 })
+
+// ------------------------------------------------- переход к карточке (#65)
+
+test('просьба показать задачу забирается один раз', () => {
+  // Повторное чтение открывало бы окно снова после каждого закрытия.
+  const toggle = loadClient().exported.helpers.createToggle()
+  toggle.show('t1', 'simple')
+  // Значение пришло из другой области видимости (node:vm), поэтому сверяем
+  // поля, а не объект целиком: у него чужой прототип.
+  const asked = toggle.takeWanted()
+  assert.equal(asked.id, 't1')
+  assert.equal(asked.board, 'simple')
+  assert.equal(toggle.takeWanted(), undefined)
+})
+
+test('просьба открывает закрытую доску', () => {
+  const toggle = loadClient().exported.helpers.createToggle()
+  assert.equal(toggle.isOpen(), false)
+  toggle.show('t1', 'main')
+  assert.equal(toggle.isOpen(), true)
+})
+
+test('просьба к открытой доске будит подписчиков, не закрывая её', () => {
+  const toggle = loadClient().exported.helpers.createToggle()
+  let calls = 0
+  toggle.set(true)
+  toggle.subscribe(() => { calls += 1 })
+  toggle.show('t1', 'main')
+  assert.equal(toggle.isOpen(), true)
+  assert.equal(calls, 1, 'подписчик не услышал просьбу')
+})
+
+test('доска по умолчанию — проектная', () => {
+  const toggle = loadClient().exported.helpers.createToggle()
+  toggle.show('t1')
+  assert.equal(toggle.takeWanted().board, 'main')
+})
