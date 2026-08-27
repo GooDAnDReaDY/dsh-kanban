@@ -108,3 +108,17 @@ entry. Writing a second entry for the same move doubles one event.
 rejected: offering a value that always comes back refused is an invitation to
 try it. A task reaches `done` by fact — a closed issue with no branch — which
 nothing can fake.
+
+## Plan and state
+
+Take the plan directly through a tool of our own. Parsing the agent's messages
+is guesswork, and the `todo_list` tool belongs to a neighbouring plugin — living
+off its events would be a dependency the owner ruled out.
+
+The board response carries the plan already parsed. The browser half is a
+separate bundle and cannot import `lib/plan.js`, so a raw JSON string would force
+the parser to be written a second time.
+
+`stopped` is a fact, not a timeout: a session is recorded and no live agent
+stands behind it. Never add a silence threshold setting for a state that has an
+exact signal.
