@@ -30,7 +30,7 @@ test('чип регистрируется в шапке чата', () => {
     available: ['settings.plugin.item', 'app.section', 'conversation.session.header.utilities'],
   })
   exported.apply(ctx)
-  const chip = registered.find((e) => e.id === '@goodandready/dsh-kanban.chip')
+  const chip = registered.find((e) => e.id === '@goodandready-private/dsh-kanban.chip')
   assert.ok(chip, 'чип не зарегистрирован')
   assert.equal(chip.name, 'conversation.session.header.utilities')
   assert.equal(chip.locale, 'dsh-kanban', 'без locale компонент не получит props.t')

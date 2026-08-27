@@ -1,5 +1,5 @@
 {
-  "name": "@goodandready/dsh-kanban",
+  "name": "@goodandready-private/dsh-kanban",
   "version": "0.1.2",
   "description": "Kanban board for DeepSeek Harness: Gitea-backed tasks, workflow columns, and a dedicated agent session per task.",
   "type": "module",
@@ -58,6 +58,6 @@
     "@deepseek-ai/dsh-tools": "^0.1.0-rc.8"
   },
   "publishConfig": {
-    "access": "public"
+    "registry": "https://npm.pkg.github.com"
   }
 }
