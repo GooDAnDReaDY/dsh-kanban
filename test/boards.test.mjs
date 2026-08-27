@@ -3,7 +3,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import { columnsOf, normalizeKind, BOARD_KINDS, DEFAULT_BOARDS, COLUMN_ORDER, withDefaults } from '../lib/config.js'
-import { buildBoard, createTask, taskBySession } from '../lib/routes.js'
+import { buildBoard, createTask, taskBySession, appendNote } from '../lib/routes.js'
 import { importIssue } from '../lib/import.js'
 import { freshStore, reopenStore } from './helpers.mjs'
 import { loadClient } from './client-load.mjs'
@@ -158,4 +158,39 @@ test('чужие решения на колонку не влияют', () => {
 test('колонка без счётчика считается пустой', () => {
   const h = loadClient().exported.helpers
   assert.equal(h.isCollapsed({ id: 'review' }, {}), true)
+})
+
+// ------------------------------------------------- заметка от чипа (#65)
+
+test('заметка дописывается в тело, а не затирает его', () => {
+  const { store, cleanup } = freshStore()
+  const task = store.createTask({ board: 'main', column: 'backlog', title: 'A', body: 'было' })
+  const out = appendNote({ store, id: task.id, input: { text: '  и стало  ' } })
+  assert.equal(out.task.body, 'было\n\nи стало')
+  cleanup()
+})
+
+test('заметка к пустому телу не оставляет пустых строк сверху', () => {
+  const { store, cleanup } = freshStore()
+  const task = store.createTask({ board: 'main', column: 'backlog', title: 'A' })
+  assert.equal(appendNote({ store, id: task.id, input: { text: 'первая' } }).task.body, 'первая')
+  cleanup()
+})
+
+test('пустая заметка отвергается, тело не трогается', () => {
+  const { store, cleanup } = freshStore()
+  const task = store.createTask({ board: 'main', column: 'backlog', title: 'A', body: 'было' })
+  for (const wrong of ['', '   ', undefined, 42]) {
+    assert.equal(appendNote({ store, id: task.id, input: { text: wrong } }).error, 'note-required')
+  }
+  assert.equal(store.getTask(task.id).body, 'было')
+  cleanup()
+})
+
+test('заметка к несуществующей задаче — честный отказ', () => {
+  const { store, cleanup } = freshStore()
+  const out = appendNote({ store, id: 'нет-такой', input: { text: 'x' } })
+  assert.equal(out.error, 'task-not-found')
+  assert.equal(out.status, 404)
+  cleanup()
 })
