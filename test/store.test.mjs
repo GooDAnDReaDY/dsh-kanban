@@ -2,11 +2,12 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { freshStore, reopenStore } from './helpers.mjs'
 
-test('доска по умолчанию заводится сразу', () => {
+test('обе доски заводятся сразу', () => {
+  // Пустое хранилище без единой доски выглядит в интерфейсе как поломка.
   const { store, cleanup } = freshStore()
   const boards = store.listBoards()
-  assert.equal(boards.length, 1)
-  assert.equal(boards[0].id, 'main')
+  assert.deepEqual(boards.map((b) => b.id), ['main', 'simple'])
+  assert.deepEqual(boards.map((b) => b.kind), ['project', 'simple'])
   cleanup()
 })
 
