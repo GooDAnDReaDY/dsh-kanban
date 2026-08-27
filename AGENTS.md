@@ -96,3 +96,15 @@ the repository whole until the next pass.
 When both sides changed, the later change wins and the losing side must be
 written into the task log. A synchronisation that quietly undoes someone's edit
 is worse than none.
+
+## Moving a card
+
+A manual move is an instruction to the agent, not a record of state. Issue the
+instruction BEFORE applying the move: a stop must happen before the board claims
+the work has stopped, and the outcome then becomes the detail of the single log
+entry. Writing a second entry for the same move doubles one event.
+
+`done` is closed to the agent's tool and cut out of the enum, not merely
+rejected: offering a value that always comes back refused is an invitation to
+try it. A task reaches `done` by fact — a closed issue with no branch — which
+nothing can fake.

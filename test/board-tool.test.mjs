@@ -6,6 +6,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { boardMoveDefinition, sessionIdFromExec } from '../lib/board-tool.js'
 import { COLUMN_ORDER } from '../lib/config.js'
+import { TOOL_FORBIDDEN_COLUMNS } from '../lib/commands.js'
 import { freshStore } from './helpers.mjs'
 
 const stubStore = { findTaskBySession: () => undefined, moveTask() {}, addTransition() {} }
@@ -22,7 +23,10 @@ test('parameters — карта свойств, а не JSON Schema с корн�
   const { parameters } = boardMoveDefinition({ store: stubStore })
   assert.equal(parameters.type, undefined, 'корень type: object отвергается value schema DSL')
   assert.equal(parameters.properties, undefined)
-  assert.deepEqual(parameters.column.enum, [...COLUMN_ORDER])
+  // `done` вырезан намеренно: завершение задачи не должно опираться на
+  // заявление инструмента, см. lib/commands.js.
+  assert.deepEqual(parameters.column.enum,
+    COLUMN_ORDER.filter((c) => !TOOL_FORBIDDEN_COLUMNS.includes(c)))
 })
 
 test('обязательность выражается только через required: true', () => {
