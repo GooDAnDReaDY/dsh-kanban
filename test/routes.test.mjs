@@ -149,6 +149,7 @@ test('путь задачи разбирается вместе с действ�
   assert.deepEqual(parseTaskPath('/dsh-kanban/task/abc'), { id: 'abc', action: undefined })
   assert.deepEqual(parseTaskPath('/dsh-kanban/task/abc/move'), { id: 'abc', action: 'move' })
   assert.deepEqual(parseTaskPath('/dsh-kanban/task/abc/log'), { id: 'abc', action: 'log' })
+  assert.deepEqual(parseTaskPath('/dsh-kanban/task/abc/message'), { id: 'abc', action: 'message' })
   assert.equal(parseTaskPath('/dsh-kanban/board'), undefined)
   assert.equal(parseTaskPath('/dsh-kanban/task/'), undefined)
 })
