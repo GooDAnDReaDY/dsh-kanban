@@ -2,7 +2,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { parseWatchList, watchedRepos, shouldTake, archiveBefore } from '../lib/intake.js'
+import { parseWatchList, watchedRepos, shouldTake, archiveBefore, isWatched } from '../lib/intake.js'
 import { intakeAll, archiveOverdue } from '../lib/sync.js'
 import { setArchived, listArchive, buildBoard, deleteTask } from '../lib/routes.js'
 import { withDefaults } from '../lib/config.js'
@@ -255,4 +255,45 @@ test('удаление задачи из архива всё ещё возмож
   assert.deepEqual(deleteTask({ store, id: task.id }), { ok: true })
   assert.equal(listArchive({ store }).tasks.length, 0)
   cleanup()
+})
+
+// ------------------------------------------------- подхват по одному репозиторию (#99)
+
+test('подхват сужается до одного репозитория', async () => {
+  // Событие вебхука говорит про один репозиторий; полный обход означал бы
+  // обращение ко всем при каждом чихе в любом из них.
+  const { store, cleanup } = freshStore()
+  const asked = []
+  const gitea = {
+    listIssues: async ({ repo }) => { asked.push(repo); return [issue(1)] },
+  }
+  const out = await intakeAll({
+    gitea, store, config: { ...config, watchRepos: 'o/раз, o/два, o/три' }, owner: 'o',
+    only: (pair) => pair.repo === 'два',
+  })
+  assert.deepEqual(asked, ['два'])
+  assert.equal(out.added, 1)
+  cleanup()
+})
+
+test('без сужения обходятся все отслеживаемые', () => {
+  const { store, cleanup } = freshStore()
+  assert.deepEqual(
+    watchedRepos({ config: { watchRepos: 'o/раз, o/два' }, owner: 'o' }).map((p) => p.repo),
+    ['раз', 'два'],
+  )
+  cleanup()
+})
+
+test('репозиторий вне списка отслеживаемым не считается', () => {
+  // Событие оттуда подхвата не заслуживает: по таймеру мы туда не ходим, и
+  // через вебхук ходить не должны — иначе список перестаёт что-либо решать.
+  const cfg = { watchRepos: 'o/свой' }
+  assert.equal(isWatched({ config: cfg, owner: 'o', defaultOwner: 'o', repo: 'свой' }), true)
+  assert.equal(isWatched({ config: cfg, owner: 'o', defaultOwner: 'o', repo: 'чужой' }), false)
+  assert.equal(isWatched({ config: cfg, owner: 'другой', defaultOwner: 'o', repo: 'свой' }), false)
+})
+
+test('пустой список не делает отслеживаемым никого', () => {
+  assert.equal(isWatched({ config: { watchRepos: '' }, owner: 'o', defaultOwner: 'o', repo: 'р' }), false)
 })
