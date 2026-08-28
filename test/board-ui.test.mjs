@@ -260,3 +260,48 @@ test('задача без issue номера не показывает', () => {
   assert.equal(h.taskRef({}), null)
   assert.equal(h.taskRef(undefined), null)
 })
+
+test('подписи управления в шапке — с прописной буквы', () => {
+  // Смешение прописных и строчных в одном ряду выглядит халтурой. Правило:
+  // подпись кнопки — имя, значит с прописной; встроенный текст — часть фразы,
+  // значит со строчной.
+  const { src } = loadClient()
+  const controls = [
+    'board.back', 'board.archive', 'board.search', 'board.sync', 'board.refresh',
+    'board.newTask', 'board.clearFilters',
+    'facet.repo', 'facet.type', 'facet.priority', 'facet.status',
+    'boardName.main', 'boardName.simple',
+  ]
+  const wrong = []
+  for (const key of controls) {
+    for (const m of src.matchAll(new RegExp("'" + key + "': '([^']*)'", 'g'))) {
+      const value = m[1]
+      if (value !== '' && value[0] !== value[0].toUpperCase()) wrong.push(key + ' = ' + value)
+    }
+  }
+  assert.deepEqual(wrong, [], 'подпись управления со строчной: ' + wrong.join(', '))
+})
+
+test('известные пространства меток переводятся, незнакомые остаются как есть', () => {
+  // Подставлять свой перевод пространству, заведённому вчера, доска не вправе.
+  const h = loadClient().exported.helpers
+  const t = (k) => (k === 'facet.type' ? 'Тип' : k)
+  assert.equal(h.facetLabel('type', t), 'Тип')
+  assert.equal(h.facetLabel('выдумка', t), 'выдумка')
+})
+
+test('названия наших досок переводятся, переименованные не трогаются', () => {
+  const h = loadClient().exported.helpers
+  const t = (k) => (k === 'boardName.main' ? 'Проектная доска' : k)
+  assert.equal(h.boardTitle({ id: 'main', title: 'из базы' }, t), 'Проектная доска')
+  assert.equal(h.boardTitle({ id: 'своя', title: 'Моя доска' }, t), 'Моя доска')
+  assert.equal(h.boardTitle(undefined, t), '')
+})
+
+test('каждое известное пространство меток имеет обе подписи', () => {
+  const { src } = loadClient()
+  for (const ns of ['repo', 'type', 'priority', 'status', 'scope', 'risk', 'signal', 'release']) {
+    const found = src.split(`'facet.${ns}':`).length - 1
+    assert.equal(found, 2, `у facet.${ns} не два перевода, а ${found}`)
+  }
+})
