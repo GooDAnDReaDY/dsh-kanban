@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 
 import {
   splitLabel, facetsOf, matchesFilters, anySelected, toggleValue, clearFilters,
-  KNOWN_ORDER, REPO,
+  KNOWN_ORDER, REPO, labelColor, colorsOfIssue,
 } from '../lib/filters.js'
 import { applyObservation } from '../lib/sync.js'
 import { freshStore } from './helpers.mjs'
@@ -290,4 +290,79 @@ test('переключение в браузере ведёт себя как н
   assert.deepEqual(Object.keys(h.toggleValue(one, 'type', 'bug')), [])
   assert.equal(h.anySelected({}), false)
   assert.equal(h.anySelected(one), true)
+})
+
+// ------------------------------------------------- цвета меток (#107)
+
+test('цвет принимается только шестнадцатеричным кодом', () => {
+  // Значение приходит из Gitea и попадает прямо в стиль: пускать туда что
+  // попало нельзя.
+  assert.equal(labelColor('0e8a16'), '0e8a16')
+  assert.equal(labelColor('#FF6600'), 'ff6600')
+  for (const wrong of ['красный', '', '12345', '1234567', 'ggghhh', undefined, null, 42]) {
+    assert.equal(labelColor(wrong), undefined, String(wrong))
+  }
+})
+
+test('карта цветов собирается из меток issue', () => {
+  const out = colorsOfIssue([
+    { name: 'type/feature', color: '0e8a16' },
+    { name: 'без цвета' },
+    { name: 'мусорный цвет', color: 'нет' },
+    'строкой',
+  ])
+  assert.deepEqual(out, { 'type/feature': '0e8a16' })
+})
+
+test('метка без цвета в карту не попадает', () => {
+  // Иначе на карточке появится чёрный прямоугольник вместо нейтральной метки.
+  assert.deepEqual(colorsOfIssue([{ name: 'epic' }]), {})
+  assert.deepEqual(colorsOfIssue(undefined), {})
+})
+
+test('цвет доезжает от issue до карточки и обновляется сверкой', () => {
+  const { store, cleanup } = freshStore()
+  const task = store.createTask({
+    board: 'main', column: 'backlog', title: 'A', owner: 'o', repo: 'r', issueNumber: 1,
+    labels: ['type/bug'], labelColors: { 'type/bug': 'd73a4a' },
+  })
+  assert.equal(store.getTask(task.id).labelColors['type/bug'], 'd73a4a')
+
+  applyObservation({
+    store,
+    task: store.getTask(task.id),
+    observation: { column: undefined, branch: undefined, pull: undefined },
+    issue: { title: 'A', labels: [{ name: 'type/bug', color: '111111' }] },
+  })
+  assert.equal(store.getTask(task.id).labelColors['type/bug'], '111111')
+  cleanup()
+})
+
+test('испорченная карта цветов не роняет чтение доски', () => {
+  const { store, cleanup } = freshStore()
+  const task = store.createTask({ board: 'main', column: 'backlog', title: 'A' })
+  store.updateTask(task.id, { labelColors: undefined })
+  assert.deepEqual(store.getTask(task.id).labelColors, {})
+  cleanup()
+})
+
+test('текст на светлом фоне тёмный, на тёмном — светлый', () => {
+  const h = loadClient().exported.helpers
+  assert.equal(h.readableOn('ffffff'), '#111')
+  assert.equal(h.readableOn('0e8a16'), '#fff')
+  assert.equal(h.readableOn('000000'), '#fff')
+  // Насыщенный зелёный по яркости тёмный — белый текст на нём верен, и так же
+  // считает сам Gitea. Тёмного текста требует по-настоящему светлый фон.
+  assert.equal(h.readableOn('00aa00'), '#fff')
+  assert.equal(h.readableOn('c2e0c6'), '#111', 'бледно-зелёный требует тёмного текста')
+  assert.equal(h.readableOn('нет цвета'), '')
+})
+
+test('метка без цвета остаётся нейтральной', () => {
+  const h = loadClient().exported.helpers
+  assert.equal(h.tagStyle({ labelColors: {} }, 'epic'), undefined)
+  assert.equal(h.tagStyle({}, 'epic'), undefined)
+  const style = h.tagStyle({ labelColors: { 'type/bug': 'd73a4a' } }, 'type/bug')
+  assert.equal(style.background, '#d73a4a')
+  assert.equal(style.color, '#fff')
 })
