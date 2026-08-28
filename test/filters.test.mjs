@@ -4,9 +4,11 @@ import assert from 'node:assert/strict'
 
 import {
   splitLabel, facetsOf, matchesFilters, anySelected, toggleValue, clearFilters,
-  KNOWN_ORDER, REPO, labelColor, colorsOfIssue,
+  KNOWN_ORDER, REPO, labelColor, colorsOfIssue, sortByLife, liveRank, groupByRepo,
 } from '../lib/filters.js'
 import { applyObservation } from '../lib/sync.js'
+import { buildBoard } from '../lib/routes.js'
+import { withDefaults } from '../lib/config.js'
 import { freshStore } from './helpers.mjs'
 import { loadClient } from './client-load.mjs'
 
@@ -365,4 +367,81 @@ test('метка без цвета остаётся нейтральной', () 
   const style = h.tagStyle({ labelColors: { 'type/bug': 'd73a4a' } }, 'type/bug')
   assert.equal(style.background, '#d73a4a')
   assert.equal(style.color, '#fff')
+})
+
+// ------------------------------------------------- раскладка колонки (#109, #110, #113)
+
+test('идущая работа поднимается: ждущие, идущие, остановившиеся, прочие', () => {
+  // Ждущие впереди идущих намеренно: идущая работа идёт сама, а ждущая стоит
+  // из-за человека.
+  const tasks = [
+    { id: 'обычная', state: 'none' },
+    { id: 'остановилась', state: 'stopped' },
+    { id: 'идёт', state: 'running' },
+    { id: 'ждёт', state: 'waiting' },
+  ]
+  assert.deepEqual(sortByLife(tasks).map((t) => t.id), ['ждёт', 'идёт', 'остановилась', 'обычная'])
+})
+
+test('подъём не переписывает ручной порядок внутри ступени', () => {
+  const tasks = [
+    { id: 'вторая', state: 'none' },
+    { id: 'первая', state: 'none' },
+    { id: 'идёт', state: 'running' },
+  ]
+  assert.deepEqual(sortByLife(tasks).map((t) => t.id), ['идёт', 'вторая', 'первая'])
+})
+
+test('признак ожидания из хранилища тоже поднимает', () => {
+  assert.equal(liveRank({ waiting: true }), 0)
+  assert.equal(liveRank({ state: 'running' }), 1)
+  assert.equal(liveRank({}), 3)
+})
+
+test('группы идут от крупных к мелким', () => {
+  // Проект с двадцатью задачами не должен теряться под однозадачными.
+  const out = groupByRepo([
+    { repo: 'мелкий' },
+    { repo: 'крупный' }, { repo: 'крупный' }, { repo: 'крупный' },
+    { repo: 'средний' }, { repo: 'средний' },
+  ])
+  assert.deepEqual(out.map((g) => g.repo + '×' + g.tasks.length),
+    ['крупный×3', 'средний×2', 'мелкий×1'])
+})
+
+test('задачи без проекта собираются в свою группу', () => {
+  const out = groupByRepo([{ repo: 'есть' }, {}, { repo: '' }])
+  const nameless = out.find((g) => g.repo === '')
+  assert.equal(nameless.tasks.length, 2)
+})
+
+test('при равном размере группы идут по имени, чтобы не плясали', () => {
+  const out = groupByRepo([{ repo: 'бета' }, { repo: 'альфа' }])
+  assert.deepEqual(out.map((g) => g.repo), ['альфа', 'бета'])
+})
+
+test('доска отдаёт задачи уже разложенными', () => {
+  // Браузер рисует заголовок при смене проекта; если группы разорвутся,
+  // заголовки задвоятся.
+  const { store, cleanup } = freshStore()
+  store.createTask({ board: 'main', column: 'backlog', title: 'A', repo: 'один' })
+  store.createTask({ board: 'main', column: 'backlog', title: 'B', repo: 'два' })
+  store.createTask({ board: 'main', column: 'backlog', title: 'C', repo: 'один' })
+
+  const order = buildBoard({ store, config: withDefaults({}) })
+    .tasks.filter((t) => t.column === 'backlog').map((t) => t.repo)
+  assert.deepEqual(order, ['один', 'один', 'два'], 'группы обязаны идти подряд')
+  cleanup()
+})
+
+test('полоса срочности берёт цвет только у priority', () => {
+  const h = loadClient().exported.helpers
+  const task = {
+    facets: { priority: ['high'], type: ['bug'] },
+    labelColors: { 'priority/high': 'ff6600', 'type/bug': 'd73a4a' },
+  }
+  assert.equal(h.priorityColor(task), '#ff6600')
+  assert.equal(h.priorityColor({ facets: { type: ['bug'] }, labelColors: { 'type/bug': 'd73a4a' } }), '')
+  assert.equal(h.priorityColor({ facets: { priority: ['high'] }, labelColors: {} }), '')
+  assert.equal(h.priorityColor({}), '')
 })
