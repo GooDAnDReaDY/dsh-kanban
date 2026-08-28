@@ -64,3 +64,39 @@ test('у каждой колонки есть подпись в обоих яз�
     assert.ok(src.includes(`'column.${id}'`), `нет подписи колонки ${id}`)
   }
 })
+
+test('index.js не пользуется тем, чего не импортировал', () => {
+  // Обвязка cordis не проверяется модульными тестами: они зовут чистые модули
+  // напрямую и через index.js не ходят никогда. Забытый импорт даёт не падение
+  // при загрузке, а ReferenceError внутри обработчика — то есть маршрут молча
+  // отвечает «bad-request», и ни один тест не краснеет.
+  //
+  // Ровно так уехали в релиз маршруты архива.
+  const src = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
+
+  const imported = new Set()
+  for (const m of src.matchAll(/import\s*\{([^}]+)\}\s*from\s*'\.\/[a-z-]+\.js'/g)) {
+    for (const name of m[1].split(',')) {
+      const clean = name.trim().split(/\s+as\s+/).pop().trim()
+      if (clean !== '') imported.add(clean)
+    }
+  }
+
+  // Что объявлено в наших же модулях и потому может быть забыто в импорте.
+  const exported = new Set()
+  for (const file of ['routes.js', 'import.js', 'sync.js', 'launcher.js', 'commands.js', 'intake.js']) {
+    const mod = readFileSync(new URL('../lib/' + file, import.meta.url), 'utf8')
+    for (const m of mod.matchAll(/export\s+(?:async\s+)?function\s+([A-Za-z0-9_]+)/g)) exported.add(m[1])
+  }
+
+  const missing = []
+  for (const name of exported) {
+    if (imported.has(name)) continue
+    // Ищем вызов по имени; объявления самого index.js не в счёт.
+    const used = new RegExp('(?<![.\\w])' + name + '\\s*\\(').test(src)
+    const declared = new RegExp('(?:function|const|let)\\s+' + name + '\\b').test(src)
+    if (used && !declared) missing.push(name)
+  }
+
+  assert.deepEqual(missing, [], 'index.js зовёт не импортированное: ' + missing.join(', '))
+})
