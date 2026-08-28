@@ -22,9 +22,9 @@ test('список разбирается через запятую, пробе�
   assert.deepEqual(parseWatchList(' раз , два,три '), ['раз', 'два', 'три'])
 })
 
-test('пустая настройка не означает «следить за всеми»', () => {
-  // Первый же запуск с незаполненной настройкой залил бы доску всеми
-  // открытыми issue организации.
+test('пустая настройка не называет ни одного репозитория поимённо', () => {
+  // Что делать с пустым списком, решает проход подхвата: там есть Gitea, у
+  // которого можно спросить, какие репозитории вообще существуют.
   for (const empty of ['', '  ', ',,', undefined, null]) {
     assert.deepEqual(parseWatchList(empty), [], String(empty))
     assert.deepEqual(watchedRepos({ config: { watchRepos: empty }, owner: 'o' }), [])
@@ -146,13 +146,96 @@ test('недоступный репозиторий не роняет остал
   cleanup()
 })
 
-test('пустой список репозиториев ничего не забирает', async () => {
+test('пустой список означает ВСЕ репозитории владельца', async () => {
+  // Владелец просил, чтобы задачи загружались сами; ручной список этому
+  // противоречил, и прежнее поведение развёрнуто намеренно.
   const { store, cleanup } = freshStore()
-  let called = false
-  const gitea = { listIssues: async () => { called = true; return [issue(1)] } }
+  const gitea = {
+    listOrgRepos: async () => [
+      { name: 'живой', openIssues: 2, archived: false },
+      { name: 'пустой', openIssues: 0, archived: false },
+      { name: 'заброшенный', openIssues: 5, archived: true },
+    ],
+    listIssues: async ({ repo }) => (repo === 'живой' ? [issue(1)] : []),
+  }
+  const out = await intakeAll({ gitea, store, config, owner: 'o' })
+  assert.equal(out.added, 1)
+  cleanup()
+})
+
+test('репозиторий без открытых задач не опрашивается', async () => {
+  // Полсотни запросов впустую каждые две минуты — расточительство, а не
+  // осторожность.
+  const { store, cleanup } = freshStore()
+  const asked = []
+  const gitea = {
+    listOrgRepos: async () => [
+      { name: 'живой', openIssues: 1, archived: false },
+      { name: 'пустой', openIssues: 0, archived: false },
+    ],
+    listIssues: async ({ repo }) => { asked.push(repo); return [] },
+  }
+  await intakeAll({ gitea, store, config, owner: 'o' })
+  assert.deepEqual(asked, ['живой'])
+  cleanup()
+})
+
+test('заброшенный репозиторий не опрашивается', async () => {
+  const { store, cleanup } = freshStore()
+  const asked = []
+  const gitea = {
+    listOrgRepos: async () => [{ name: 'заброшенный', openIssues: 9, archived: true }],
+    listIssues: async ({ repo }) => { asked.push(repo); return [] },
+  }
+  await intakeAll({ gitea, store, config, owner: 'o' })
+  assert.deepEqual(asked, [])
+  cleanup()
+})
+
+test('заданный список сужает и списка организации не запрашивает', async () => {
+  const { store, cleanup } = freshStore()
+  let listed = false
+  const gitea = {
+    listOrgRepos: async () => { listed = true; return [] },
+    listIssues: async () => [issue(1)],
+  }
+  const out = await intakeAll({ gitea, store, config: { ...config, watchRepos: 'o/точечно' }, owner: 'o' })
+  assert.equal(out.added, 1)
+  assert.equal(listed, false, 'при заданном списке организацию спрашивать незачем')
+  cleanup()
+})
+
+test('без владельца подхват отказывает словами, а не молчит', async () => {
+  const { store, cleanup } = freshStore()
+  const out = await intakeAll({ gitea: {}, store, config, owner: undefined })
+  assert.equal(out.failed, 1)
+  assert.match(out.problem.message, /владелец/)
+  cleanup()
+})
+
+test('отказ списка репозиториев не роняет проход', async () => {
+  const { store, cleanup } = freshStore()
+  const gitea = { listOrgRepos: async () => { throw new Error('нет прав') } }
   const out = await intakeAll({ gitea, store, config, owner: 'o' })
   assert.equal(out.added, 0)
-  assert.equal(called, false, 'к Gitea не должно быть ни одного обращения')
+  assert.match(out.problem.message, /нет прав/)
+  cleanup()
+})
+
+test('прямой список репозиториев минует и настройку, и Gitea', async () => {
+  // Так ходит вебхук: событие про один репозиторий, и список организации ради
+  // него запрашивать незачем.
+  const { store, cleanup } = freshStore()
+  let listed = false
+  const gitea = {
+    listOrgRepos: async () => { listed = true; return [] },
+    listIssues: async () => [issue(1)],
+  }
+  const out = await intakeAll({
+    gitea, store, config, owner: 'o', repos: [{ owner: 'o', repo: 'событие' }],
+  })
+  assert.equal(out.added, 1)
+  assert.equal(listed, false)
   cleanup()
 })
 

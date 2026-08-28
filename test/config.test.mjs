@@ -6,6 +6,7 @@ import {
   withDefaults,
   wipLimitField,
 } from '../lib/config.js'
+import { loadClient } from './client-load.mjs'
 
 test('withDefaults заполняет значения по умолчанию', () => {
   const cfg = withDefaults({})
@@ -85,4 +86,22 @@ test('каждому умолчанию соответствует свой ти
   const kinds = new Set(Object.values(CONFIG_DEFAULTS).map((v) => typeof v))
   assert.deepEqual([...kinds].sort(), ['boolean', 'number', 'string'],
     'появился тип умолчания, для которого в схеме нет узла')
+})
+
+test('каждая настройка имеет поле в карточке и обе подписи', () => {
+  // Настройка без поля недоступна человеку вовсе: она есть на сервере, работает
+  // по умолчанию и молча не поддаётся правке. Так уехали в релиз watchRepos и
+  // archiveAfterDays — их некуда было вписать.
+  const { src } = loadClient()
+  const fields = new Set()
+  const block = src.slice(src.indexOf('const FIELDS = ['), src.indexOf('function hintKey'))
+  for (const m of block.matchAll(/field: '([A-Za-z0-9_]+)'/g)) fields.add(m[1])
+
+  const missing = Object.keys(CONFIG_DEFAULTS).filter((key) => !fields.has(key))
+  assert.deepEqual(missing, [], 'нет поля в карточке настроек: ' + missing.join(', '))
+
+  for (const key of Object.keys(CONFIG_DEFAULTS)) {
+    const labels = src.split(`'field.${key}':`).length - 1
+    assert.equal(labels, 2, `у field.${key} не два перевода, а ${labels}`)
+  }
 })
