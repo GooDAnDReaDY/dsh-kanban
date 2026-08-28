@@ -122,3 +122,15 @@ the parser to be written a second time.
 `stopped` is a fact, not a timeout: a session is recorded and no live agent
 stands behind it. Never add a silence threshold setting for a state that has an
 exact signal.
+
+## The cordis wiring is untested
+
+`lib/index.js` is not covered by the suite: the unit tests call the pure
+modules directly and never go through it. A forgotten import there does not
+break loading — the module loads, routes register, everything looks fine until
+the first request, which answers a meaningless `bad-request`.
+
+A green suite therefore does not prove the wiring is whole. When adding a route,
+check by hand that its handler's every name is imported, and remember that the
+guard test only catches names missing entirely, not names taken from the wrong
+module.
