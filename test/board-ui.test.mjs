@@ -223,3 +223,40 @@ test('кнопка возврата зовёт onClose, а не свой спо�
   const bar = src.slice(src.indexOf("className: 'dkb-bar'"), src.indexOf("dkb-barTitle'"))
   assert.ok(bar.includes('props.onClose'), 'кнопка закрывает доску в обход общего пути')
 })
+
+test('проект и номер задачи разделены', () => {
+  // Слипшиеся, они читаются как один непонятный идентификатор, а это две
+  // разные вещи: имя проекта — принадлежность, номер — адрес.
+  const h = loadClient().exported.helpers
+  const out = h.taskRef({ repo: 'memory-brain', issueNumber: 1368, issueUrl: 'https://gitea/x' })
+  const kids = Array.from(out.children ?? [])
+  assert.equal(kids.length, 2, 'ожидались отдельные имя и номер')
+  assert.equal(kids[0].props.className, 'dkb-refRepo')
+  assert.equal(kids[0].children[0], 'memory-brain')
+  assert.match(kids[1].props.className, /dkb-refNum/)
+  assert.equal(kids[1].children[0], '#1368')
+})
+
+test('номер ведёт на issue и не открывает карточку', () => {
+  const h = loadClient().exported.helpers
+  const num = Array.from(h.taskRef({ repo: 'r', issueNumber: 7, issueUrl: 'https://gitea/7' }).children)[1]
+  assert.equal(num.type, 'a')
+  assert.equal(num.props.href, 'https://gitea/7')
+  assert.equal(typeof num.props.onClick, 'function', 'щелчок обязан гаситься, иначе откроется карточка')
+})
+
+test('небезопасный адрес ссылкой не становится', () => {
+  const h = loadClient().exported.helpers
+  for (const bad of ['javascript:alert(1)', 'data:text/html,x', '/относительный', '']) {
+    const num = Array.from(h.taskRef({ repo: 'r', issueNumber: 7, issueUrl: bad }).children)[1]
+    assert.equal(num.type, 'span', String(bad))
+  }
+})
+
+test('задача без issue номера не показывает', () => {
+  const h = loadClient().exported.helpers
+  const kids = Array.from(h.taskRef({ repo: 'r' }).children).filter(Boolean)
+  assert.equal(kids.length, 1)
+  assert.equal(h.taskRef({}), null)
+  assert.equal(h.taskRef(undefined), null)
+})
