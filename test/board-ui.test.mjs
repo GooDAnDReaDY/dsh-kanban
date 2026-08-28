@@ -305,3 +305,28 @@ test('каждое известное пространство меток име
     assert.equal(found, 2, `у facet.${ns} не два перевода, а ${found}`)
   }
 })
+
+test('на карточке дата заведения, а не возраст в колонке', () => {
+  // «Здесь 34 минуты» у задачи, приехавшей подхватом полчаса назад, не значит
+  // ничего: это возраст карточки на доске, а спрашивают про возраст задачи.
+  const h = loadClient().exported.helpers
+  const now = Date.now()
+  assert.notEqual(h.shortDate(now), '')
+  assert.equal(h.shortDate(0), '')
+  assert.equal(h.shortDate(undefined), '')
+})
+
+test('дата этого года без года, прошлого — с годом', () => {
+  const h = loadClient().exported.helpers
+  const thisYear = h.shortDate(Date.now())
+  const longAgo = h.shortDate(new Date('2019-03-05T10:00:00Z').getTime())
+  assert.ok(longAgo.length > thisYear.length, 'у прошлогодней даты должен быть год')
+})
+
+test('своё название колонки вытесняет переведённое', () => {
+  const h = loadClient().exported.helpers
+  const t = (k) => (k === 'column.backlog' ? 'Бэклог' : k)
+  assert.equal(h.columnTitle({ id: 'backlog' }, t), 'Бэклог')
+  assert.equal(h.columnTitle({ id: 'backlog', name: 'Идеи' }, t), 'Идеи')
+  assert.equal(h.columnTitle({ id: 'backlog', name: '' }, t), 'Бэклог')
+})

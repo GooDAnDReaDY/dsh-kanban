@@ -5,6 +5,7 @@ import {
   COLUMN_ORDER,
   withDefaults,
   wipLimitField,
+  columnNamesOf,
 } from '../lib/config.js'
 import { loadClient } from './client-load.mjs'
 
@@ -104,4 +105,21 @@ test('каждая настройка имеет поле в карточке и
     const labels = src.split(`'field.${key}':`).length - 1
     assert.equal(labels, 2, `у field.${key} не два перевода, а ${labels}`)
   }
+})
+
+test('свои названия колонок разбираются парами', () => {
+  const out = columnNamesOf({ columnNames: 'backlog=Идеи, review = Проверка ,мусор' })
+  assert.deepEqual(out, { backlog: 'Идеи', review: 'Проверка' })
+})
+
+test('пустая настройка названий колонок ничего не переименовывает', () => {
+  for (const empty of ['', '   ', ',,', '=пусто', 'ключ=', undefined]) {
+    assert.deepEqual(columnNamesOf({ columnNames: empty }), {}, String(empty))
+  }
+  assert.deepEqual(columnNamesOf(undefined), {})
+})
+
+test('название неизвестной колонки не отбрасывается', () => {
+  // Колонка может появиться позже, и тогда настройка сработает сама.
+  assert.deepEqual(columnNamesOf({ columnNames: 'выдумка=Название' }), { выдумка: 'Название' })
 })
