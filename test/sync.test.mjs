@@ -96,7 +96,10 @@ test('сверка двигает задачу по состоянию Gitea', a
     pulls: [{ number: 9, head: { ref: 'feat/7-x' }, state: 'open', title: 'feat: готово' }],
   })
   const out = await syncAll({ gitea, store })
-  assert.deepEqual(out, { checked: 1, moved: 1, failed: 0 })
+  assert.equal(out.checked, 1)
+  assert.equal(out.moved, 1)
+  assert.equal(out.failed, 0)
+  assert.equal(out.problem, undefined, 'удачный проход не должен называть беду')
   assert.equal(store.getTask(task.id).column, 'review')
   cleanup()
 })
