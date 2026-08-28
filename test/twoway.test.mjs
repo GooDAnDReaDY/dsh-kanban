@@ -187,54 +187,43 @@ test('событие без репозитория не разбирается',
 
 // ----------------------------------------------------------- отправка в Gitea
 
-test('перенос ставит метку колонки и снимает метку прежней', () => {
+test('в Gitea уходит только закрытие issue', () => {
+  // Метки колонок доска не ставит: колонку она выводит из состояния issue,
+  // ветки и pull request, а метка лишь пересказывала бы то, что там уже есть.
   const config = withDefaults({})
-  const task = { issueNumber: 7, owner: 'o', repo: 'r', labels: ['bug', 'kanban/in-progress'] }
-  const ops = planOutbound(task, 'review', config)
-  assert.equal(ops.length, 1)
-  assert.equal(ops[0].kind, 'labels')
-  assert.deepEqual(ops[0].labels, ['bug', 'kanban/review'])
+  const task = { issueNumber: 7, owner: 'o', repo: 'r', labels: ['bug', 'hotfix'] }
+  for (const column of ['backlog', 'in-progress', 'review', 'deploy', 'cleanup']) {
+    assert.deepEqual(planOutbound(task, column, config), [], `колонка ${column} что-то отправила`)
+  }
 })
 
-test('чужие метки доска не трогает', () => {
-  // На issue живут метки процесса — bug, feat, hotfix. Стирать их права нет.
+test('чужие метки доска не трогает вовсе', () => {
+  // На issue живут метки процесса — bug, feat, hotfix. Теперь доска не только
+  // не стирает их, но и не назначает ничего.
   const config = withDefaults({})
   const task = { issueNumber: 7, owner: 'o', repo: 'r', labels: ['hotfix', 'feat'] }
-  const ops = planOutbound(task, 'deploy', config)
-  assert.ok(ops[0].labels.includes('hotfix'))
-  assert.ok(ops[0].labels.includes('feat'))
+  const ops = planOutbound(task, 'done', config)
+  assert.equal(ops.length, 1)
+  assert.equal(ops[0].kind, 'close')
 })
 
-test('колонка без метки метку не ставит', () => {
-  const config = withDefaults({})
-  const task = { issueNumber: 7, owner: 'o', repo: 'r', labels: ['kanban/review'] }
-  const ops = planOutbound(task, 'backlog', config)
-  assert.deepEqual(ops[0].labels, [], 'метка колонки должна быть снята')
-})
-
-test('перевод в done дополнительно закрывает issue', () => {
+test('перевод в done закрывает issue', () => {
   const ops = planOutbound({ issueNumber: 7, owner: 'o', repo: 'r', labels: [] }, 'done', withDefaults({}))
-  assert.ok(ops.some((o) => o.kind === 'close'))
+  assert.deepEqual(ops, [{ kind: 'close', owner: 'o', repo: 'r', index: 7 }])
 })
 
 test('своей задаче без issue отправлять нечего', () => {
   assert.deepEqual(planOutbound({ labels: [] }, 'done', withDefaults({})), [])
 })
 
-test('совпадающий набор меток не порождает лишнего запроса', () => {
-  const config = withDefaults({})
-  const task = { issueNumber: 7, owner: 'o', repo: 'r', labels: ['kanban/review'] }
-  assert.deepEqual(planOutbound(task, 'review', config), [])
-})
-
 test('очередь отправляет накопленное', async () => {
   const { store, cleanup } = freshStore()
   const sent = []
   const outbox = createOutbox({
-    gitea: { setLabels: async (op) => sent.push(op), closeIssue: async (op) => sent.push(op) },
+    gitea: { closeIssue: async (op) => sent.push(op) },
     store,
   })
-  outbox.push('t1', [{ kind: 'labels', owner: 'o', repo: 'r', index: 7, labels: ['x'] }])
+  outbox.push('t1', [{ kind: 'close', owner: 'o', repo: 'r', index: 7 }])
   const out = await outbox.flush()
   assert.equal(out.sent, 1)
   assert.equal(outbox.size(), 0)
@@ -245,10 +234,10 @@ test('очередь отправляет накопленное', async () => {
 test('недоступный Gitea не теряет отправку, а откладывает', async () => {
   const { store, cleanup } = freshStore()
   const outbox = createOutbox({
-    gitea: { setLabels: async () => { throw new Error('нет связи') } },
+    gitea: { closeIssue: async () => { throw new Error('нет связи') } },
     store, logger: { warn() {} },
   })
-  outbox.push('t1', [{ kind: 'labels', owner: 'o', repo: 'r', index: 7, labels: ['x'] }])
+  outbox.push('t1', [{ kind: 'close', owner: 'o', repo: 'r', index: 7 }])
   const out = await outbox.flush()
   assert.equal(out.retried, 1)
   assert.equal(outbox.size(), 1, 'операция обязана остаться в очереди')
@@ -259,10 +248,10 @@ test('исчерпав попытки, отправка попадает в жу
   const { store, cleanup } = freshStore()
   const task = store.createTask({ board: 'main', column: 'review', title: 'A' })
   const outbox = createOutbox({
-    gitea: { setLabels: async () => { throw new Error('нет связи') } },
+    gitea: { closeIssue: async () => { throw new Error('нет связи') } },
     store, logger: { warn() {} }, maxAttempts: 2,
   })
-  outbox.push(task.id, [{ kind: 'labels', owner: 'o', repo: 'r', index: 7, labels: ['x'] }])
+  outbox.push(task.id, [{ kind: 'close', owner: 'o', repo: 'r', index: 7 }])
   await outbox.flush()
   const out = await outbox.flush()
   assert.equal(out.dropped, 1)
@@ -280,52 +269,3 @@ function createSignature(secret, body) {
   return createHmac('sha256', secret).update(body).digest('hex')
 }
 
-test('метки назначаются идентификаторами, а не именами', async () => {
-  // API назначения принимает ИДЕНТИФИКАТОРЫ. Запрос с именами проходит с
-  // успешным кодом и не делает ничего — молчаливая пустая работа.
-  const seen = []
-  const gitea = createGiteaClient({
-    getConfig: () => ({ giteaUrl: 'https://example.invalid', giteaTokenRef: 'GITEA_TOKEN' }),
-    resolveToken: async () => 'секрет',
-    fetchImpl: async (url, options) => {
-      seen.push({ url, method: options.method, body: options.body })
-      if (url.endsWith('/labels?limit=100')) {
-        return okJson([{ id: 11, name: 'bug' }, { id: 22, name: 'kanban/review' }])
-      }
-      return okJson({})
-    },
-  })
-  await gitea.setLabels({ owner: 'o', repo: 'r', index: 7, labels: ['bug', 'kanban/review'] })
-  const put = seen.find((c) => c.method === 'PUT')
-  assert.deepEqual(JSON.parse(put.body).labels, [11, 22])
-})
-
-test('недостающая своя метка заводится, чужая — нет', async () => {
-  const created = []
-  const gitea = createGiteaClient({
-    getConfig: () => ({ giteaUrl: 'https://example.invalid', giteaTokenRef: 'GITEA_TOKEN' }),
-    resolveToken: async () => 'секрет',
-    fetchImpl: async (url, options) => {
-      if (url.endsWith('/labels?limit=100')) return okJson([])
-      if (options.method === 'POST' && url.endsWith('/labels')) {
-        const body = JSON.parse(options.body)
-        created.push(body.name)
-        return okJson({ id: 99, name: body.name })
-      }
-      return okJson({})
-    },
-  })
-  await gitea.setLabels({
-    owner: 'o', repo: 'r', index: 7,
-    labels: ['kanban/review', 'чужая-метка'],
-    creatable: ['kanban/review'],
-  })
-  assert.deepEqual(created, ['kanban/review'], 'доска завела чужую метку')
-})
-
-test('план отправки называет свои метки создаваемыми', () => {
-  const ops = planOutbound(
-    { issueNumber: 7, owner: 'o', repo: 'r', labels: [] }, 'review', withDefaults({}))
-  assert.ok(ops[0].creatable.includes('kanban/review'))
-  assert.ok(!ops[0].creatable.includes('bug'))
-})

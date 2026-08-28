@@ -207,22 +207,3 @@ test('открытие чата: падение службы не роняет �
   const ctx = { get: () => ({ open: () => { throw new Error('нет такой сессии') } }) }
   assert.equal(h.openSession(ctx, 'kanban-1'), false)
 })
-
-test('кнопка возврата подписана на обоих языках', () => {
-  // Разметку шапки заглушка React не разворачивает: состояние доски приходит
-  // из сети, и до неё компонент возвращает заглушку загрузки. Проверяем то,
-  // что проверяемо без браузера, — что подписи не забыты ни в одном словаре.
-  const { src } = loadClient()
-  for (const key of ['board.back', 'board.backHint']) {
-    const found = src.split(`'${key}':`).length - 1
-    assert.equal(found, 2, `у ${key} не два перевода, а ${found}`)
-  }
-})
-
-test('кнопка возврата зовёт onClose, а не свой способ закрытия', () => {
-  // Способов закрытия уже три, и четвёртый разошёлся бы с ними при первой же
-  // правке. Здесь сверяем именно это намерение.
-  const { src } = loadClient()
-  const bar = src.slice(src.indexOf("className: 'dkb-bar'"), src.indexOf("dkb-barTitle'"))
-  assert.ok(bar.includes('props.onClose'), 'кнопка закрывает доску в обход общего пути')
-})

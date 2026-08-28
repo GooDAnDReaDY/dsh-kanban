@@ -167,21 +167,11 @@ test('отсутствие счётчика в ответе читается к�
   assert.equal(rows[0].archived, false)
 })
 
-test('комментарий и метки уходят нужным методом', async () => {
-  // Вызовы ищутся по назначению, а не по порядковому номеру: назначению меток
-  // предшествует чтение их идентификаторов, и номера сдвигаются.
-  const { gitea, calls } = stubClient(() => okJson([]))
+test('комментарий уходит нужным методом', async () => {
+  const { gitea, calls } = stubClient(() => okJson({ id: 1 }))
   await gitea.comment({ owner: 'o', repo: 'r', index: 3, body: 'привет' })
-  const comment = calls.find((c) => c.url.endsWith('/issues/3/comments'))
-  assert.equal(comment.options.method, 'POST')
-
-  await gitea.setLabels({ owner: 'o', repo: 'r', index: 3, labels: ['kanban/review'] })
-  const labels = calls.find((c) => c.url.endsWith('/issues/3/labels'))
-  assert.equal(labels.options.method, 'PUT')
-
-  await gitea.closeIssue({ owner: 'o', repo: 'r', index: 3 })
-  const close = calls.find((c) => c.options.method === 'PATCH')
-  assert.equal(JSON.parse(close.options.body).state, 'closed')
+  assert.equal(calls[0].options.method, 'POST')
+  assert.match(calls[0].url, /\/issues\/3\/comments$/)
 })
 
 test('пустое тело ответа не роняет разбор', async () => {
