@@ -9,7 +9,7 @@ import { COLUMN_ORDER } from '../lib/config.js'
 import { TOOL_FORBIDDEN_COLUMNS } from '../lib/commands.js'
 import { freshStore } from './helpers.mjs'
 
-const stubStore = { findTaskBySession: () => undefined, moveTask() {}, addTransition() {} }
+const stubStore = { listTasksBySession: () => [], findTaskBySession: () => undefined, moveTask() {}, addTransition() {} }
 
 test('output объявлен: render есть и отдаёт части содержимого', () => {
   const def = boardMoveDefinition({ store: stubStore })
