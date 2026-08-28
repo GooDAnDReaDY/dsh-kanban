@@ -135,7 +135,7 @@ test('у каждого исхода есть пояснение для журн
 // ------------------------------------------------- граница инструмента
 
 test('инструмент не предлагает done и отвергает его', async () => {
-  const tool = boardMoveDefinition({ store: { findTaskBySession: () => ({ id: 't1', column: 'deploy' }) } })
+  const tool = boardMoveDefinition({ store: { listTasksBySession: () => [{ id: 't1', column: 'deploy' }] } })
   for (const forbidden of TOOL_FORBIDDEN_COLUMNS) {
     assert.ok(!tool.parameters.column.enum.includes(forbidden), `${forbidden} остался в перечислении`)
     const said = await tool.execute({ column: forbidden }, { agent: { session: { id: 's1' } } })
@@ -146,7 +146,7 @@ test('инструмент не предлагает done и отвергает 
 test('разрешённые колонки инструмент по-прежнему двигает', async () => {
   const moved = []
   const store = {
-    findTaskBySession: () => ({ id: 't1', column: 'in-progress' }),
+    listTasksBySession: () => [{ id: 't1', column: 'in-progress' }],
     moveTask: (id, patch) => moved.push([id, patch.column]),
     addTransition: () => {},
   }

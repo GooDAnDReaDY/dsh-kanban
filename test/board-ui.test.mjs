@@ -330,3 +330,23 @@ test('своё название колонки вытесняет перевед
   assert.equal(h.columnTitle({ id: 'backlog', name: 'Идеи' }, t), 'Идеи')
   assert.equal(h.columnTitle({ id: 'backlog', name: '' }, t), 'Бэклог')
 })
+
+test('очередь подписана на обоих языках', () => {
+  // Ключ без второго перевода виден только тому, у кого другой язык, — то
+  // есть находится уже у владельца, а не здесь.
+  const { src } = loadClient()
+  for (const key of ['card.queue', 'card.unqueue', 'queue.title', 'queue.hint',
+    'queue.session', 'queue.option', 'queue.add', 'error.no-live-sessions']) {
+    const found = src.split(`'${key}':`).length - 1
+    assert.equal(found, 2, `у ${key} не два перевода, а ${found}`)
+  }
+})
+
+test('меню карточки предлагает очередь, а стоящей в очереди — снятие', () => {
+  // Роуты очереди без входа с карточки — мёртвый код: попасть в них нечем.
+  const { src } = loadClient()
+  const menu = src.slice(src.indexOf("menu === task.id"), src.indexOf("menu === task.id") + 2000)
+  assert.ok(menu.includes('props.onQueue(task)'), 'нет входа в очередь')
+  assert.ok(menu.includes('props.onUnqueue(task)'), 'нельзя снять с очереди')
+  assert.ok(menu.includes("task.state === 'queued'"), 'снятие предлагается не той задаче')
+})
