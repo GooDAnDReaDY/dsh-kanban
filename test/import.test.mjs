@@ -168,3 +168,33 @@ test('обновление своей задачи без issue отвергае
   assert.equal(out.error, 'task-has-no-issue')
   cleanup()
 })
+
+test('дата задачи — дата issue, а не дата подхвата', () => {
+  // Иначе задача годичной давности выглядит заведённой сегодня, и по дате на
+  // карточке нельзя понять ничего.
+  const { store, cleanup } = freshStore()
+  const born = Date.parse('2025-11-03T10:15:00Z')
+  const fields = issueToTask(
+    { number: 7, title: 'A', created_at: '2025-11-03T10:15:00Z' },
+    { owner: 'o', repo: 'r' },
+  )
+  assert.equal(fields.createdAt, born)
+  const task = store.createTask(fields)
+  assert.equal(task.createdAt, born)
+  assert.ok(task.columnAt > born, 'в колонку задача въехала сейчас, а не тогда')
+  cleanup()
+})
+
+test('без даты в issue карточка заводится сегодняшним числом', () => {
+  const { store, cleanup } = freshStore()
+  const before = Date.now()
+  const task = store.createTask(issueToTask({ number: 7, title: 'A' }, { owner: 'o', repo: 'r' }))
+  assert.ok(task.createdAt >= before, 'выдуманной датой прикрываться нечем')
+  assert.equal(issueToTask({ created_at: 'позавчера' }, {}).createdAt, undefined)
+  cleanup()
+})
+
+test('обновление из issue исправляет дату заведения', () => {
+  const patch = refreshPatch({}, { title: 'A', created_at: '2025-11-03T10:15:00Z' })
+  assert.equal(patch.createdAt, Date.parse('2025-11-03T10:15:00Z'))
+})
