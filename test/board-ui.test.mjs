@@ -350,3 +350,19 @@ test('меню карточки предлагает очередь, а стоя
   assert.ok(menu.includes('props.onUnqueue(task)'), 'нельзя снять с очереди')
   assert.ok(menu.includes("task.state === 'queued'"), 'снятие предлагается не той задаче')
 })
+
+test('задача из архива открывается тем же окном', () => {
+  // Архив — не братская могила: задачу туда убрали, а не стёрли.
+  const { src } = loadClient()
+  const at = src.lastIndexOf("dkb-archiveRow")
+  const row = src.slice(at, src.indexOf("archive.restore", at))
+  assert.ok(row.includes('setOpenTask(task)'), 'строку архива нельзя открыть')
+})
+
+test('архивной задаче предлагают возврат, а не запуск', () => {
+  const { src } = loadClient()
+  const at = src.indexOf('openTask.archivedAt')
+  assert.ok(at > 0, 'окно не различает архивную задачу')
+  const block = src.slice(at, at + 900)
+  assert.ok(block.includes("'/restore'"), 'возврата на доску нет')
+})

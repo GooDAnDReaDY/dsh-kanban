@@ -212,3 +212,19 @@ test('событие не про ожидание не трогает карто
   assert.equal(store.getTask(task.id).waiting, false)
   cleanup()
 })
+
+test('сверка чинит дату заведения у карточек, приехавших раньше', () => {
+  // Карточки на доске помнят день подхвата: починить их может только сверка,
+  // задним числом переписать базу нечем.
+  const { store, cleanup } = freshStore()
+  const task = store.createTask({
+    board: 'main', column: 'backlog', title: 'A', owner: 'o', repo: 'r', issueNumber: 7,
+  })
+  applyObservation({
+    store, task,
+    observation: { column: 'backlog' },
+    issue: { title: 'A', created_at: '2025-11-03T10:15:00Z' },
+  })
+  assert.equal(store.getTask(task.id).createdAt, Date.parse('2025-11-03T10:15:00Z'))
+  cleanup()
+})
