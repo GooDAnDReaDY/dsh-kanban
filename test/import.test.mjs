@@ -198,3 +198,21 @@ test('обновление из issue исправляет дату заведе
   const patch = refreshPatch({}, { title: 'A', created_at: '2025-11-03T10:15:00Z' })
   assert.equal(patch.createdAt, Date.parse('2025-11-03T10:15:00Z'))
 })
+
+test('автор issue доезжает до карточки', () => {
+  // «Кто это завёл» видно в Gitea под задачей; на доске это было неизвестно.
+  const { store, cleanup } = freshStore()
+  const task = store.createTask(issueToTask(
+    { number: 7, title: 'A', user: { login: 'vadim', full_name: 'Вадим' } },
+    { owner: 'o', repo: 'r' },
+  ))
+  assert.equal(task.author, 'vadim', 'логин, а не полное имя: оно заполнено не у всех')
+  cleanup()
+})
+
+test('issue без автора не выдумывает его', () => {
+  const { store, cleanup } = freshStore()
+  assert.equal(store.createTask(issueToTask({ number: 7 }, {})).author, '')
+  assert.equal(refreshPatch({}, { title: 'A' }).author, undefined, 'пустым автором чужой не затирается')
+  cleanup()
+})

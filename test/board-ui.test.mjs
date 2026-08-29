@@ -366,3 +366,9 @@ test('архивной задаче предлагают возврат, а не
   const block = src.slice(at, at + 900)
   assert.ok(block.includes("'/restore'"), 'возврата на доску нет')
 })
+
+test('автор подписан на обоих языках и стоит в окне задачи', () => {
+  const { src } = loadClient()
+  assert.equal(src.split("'panel.author':").length - 1, 2, 'у автора не два перевода')
+  assert.ok(src.includes("t('panel.author', { who: openTask.author })"), 'автора негде увидеть')
+})

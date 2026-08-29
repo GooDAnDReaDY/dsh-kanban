@@ -228,3 +228,16 @@ test('сверка чинит дату заведения у карточек, �
   assert.equal(store.getTask(task.id).createdAt, Date.parse('2025-11-03T10:15:00Z'))
   cleanup()
 })
+
+test('сверка подхватывает автора у карточек, приехавших раньше', () => {
+  const { store, cleanup } = freshStore()
+  const task = store.createTask({
+    board: 'main', column: 'backlog', title: 'A', owner: 'o', repo: 'r', issueNumber: 7,
+  })
+  applyObservation({
+    store, task, observation: { column: 'backlog' },
+    issue: { title: 'A', user: { login: 'vadim' } },
+  })
+  assert.equal(store.getTask(task.id).author, 'vadim')
+  cleanup()
+})
