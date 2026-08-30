@@ -100,3 +100,18 @@ test('index.js не пользуется тем, чего не импортир�
 
   assert.deepEqual(missing, [], 'index.js зовёт не импортированное: ' + missing.join(', '))
 })
+
+test('плагин не зовёт помощников ядра, которых в нём может не быть', () => {
+  // Именованный импорт того, чего ядро не отдаёт, роняет ЗАГРУЗКУ ВСЕГО
+  // ПРОФИЛЯ, а не один плагин: так `settingsNamespace`, убранный в
+  // 0.1.2-alpha.2, положил прод целиком. Пространство настроек — постоянная
+  // строка, проверять её у ядра незачем.
+  // Смотрим код, а не пояснения: имя убранного помощника в комментарии — это
+  // рассказ о том, почему его больше нет, и запрещать его незачем.
+  const src = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
+    .replace(/^\s*\/\/.*$/gm, '')
+  for (const gone of ['settingsNamespace', 'installSettingsSection']) {
+    assert.equal(src.includes(gone), false, 'index.js всё ещё зависит от ' + gone)
+  }
+  assert.match(src, /SETTINGS_NAMESPACE = '[a-z-]+'/, 'пространство настроек должно быть строкой')
+})
