@@ -372,3 +372,28 @@ test('автор подписан на обоих языках и стоит в 
   assert.equal(src.split("'panel.author':").length - 1, 2, 'у автора не два перевода')
   assert.ok(src.includes("t('panel.author', { who: openTask.author })"), 'автора негде увидеть')
 })
+
+/** Ключи одного словаря браузерной половины. */
+function dictKeys(src, name) {
+  const from = src.indexOf('    const ' + name + ' = {')
+  const to = src.indexOf('\n    }\n', from)
+  assert.ok(from > 0 && to > from, 'словарь ' + name + ' не найден')
+  return src.slice(from, to).match(/^ {6}'[^']+':/gm).map((row) => row.trim().slice(1, -2))
+}
+
+test('плагин несёт обе встроенные локали ядра и одинаковый набор ключей', () => {
+  // Встроенных локалей у ядра две — en и zh. Ключ, забытый в одной из них,
+  // виден только тому, у кого другой язык, то есть находится уже у человека.
+  const { src } = loadClient()
+  const en = dictKeys(src, 'en')
+  const zh = dictKeys(src, 'zh')
+  assert.deepEqual(zh.slice().sort(), en.slice().sort())
+  assert.ok(src.includes('ctx.locale.register(NS, { en, zh })'), 'словари регистрируются не оба')
+})
+
+test('русского словаря в плагине нет: он приезжает языковым пакетом', () => {
+  // Правило владельца: плагины говорят по-английски и по-китайски, а русский
+  // им даёт `dsh-russian-lang`, регистрируя `ru` для этого пространства.
+  const { src } = loadClient()
+  assert.equal(src.includes('\n    const ru = {'), false)
+})
