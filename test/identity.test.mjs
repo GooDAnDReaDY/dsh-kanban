@@ -14,7 +14,7 @@ const read = (rel) => readFileSync(path.join(root, rel), 'utf8')
 
 test('имя пакета совпадает в трёх местах', () => {
   const pkg = JSON.parse(read('package.json'))
-  assert.equal(pkg.name, '@goodandready-private/dsh-kanban')
+  assert.equal(pkg.name, '@goodandready/dsh-kanban')
   assert.ok(read('cordis.patch.yml').includes(`name: '${pkg.name}'`),
     'cordis.patch.yml не называет полное имя пакета')
   assert.ok(read('lib/client.js').includes(`id: '${pkg.name}'`),
@@ -27,7 +27,7 @@ test('короткий id патча совпадает с именем плаг
 
 test('браузерная половина отдаёт apply, службы и помощники', () => {
   const { spec, exported } = loadClient()
-  assert.equal(spec.id, '@goodandready-private/dsh-kanban')
+  assert.equal(spec.id, '@goodandready/dsh-kanban')
   assert.equal(typeof exported.apply, 'function')
   // Array.from обязателен: массив рождён внутри vm-контекста, у него другой
   // прототип, и deepStrictEqual отверг бы совпадающее содержимое.

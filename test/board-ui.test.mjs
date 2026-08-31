@@ -96,7 +96,7 @@ test('доска больше не занимает слот настроек', 
   // она встраивается прямо в оболочку.
   const { ctx, registered } = stubCtx({ available: ['settings.plugin.item', 'settings.section'] })
   exported.apply(ctx)
-  assert.equal(registered.filter((e) => e.id === '@goodandready-private/dsh-kanban.board').length, 0)
+  assert.equal(registered.filter((e) => e.id === '@goodandready/dsh-kanban.board').length, 0)
 })
 
 test('без DOM встраивание молча ничего не делает и не падает', () => {
