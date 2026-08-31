@@ -6,6 +6,7 @@ import {
   withDefaults,
   wipLimitField,
   columnNamesOf,
+  rootOf,
 } from '../lib/config.js'
 import { loadClient } from './client-load.mjs'
 
@@ -122,4 +123,15 @@ test('пустая настройка названий колонок ничег
 test('название неизвестной колонки не отбрасывается', () => {
   // Колонка может появиться позже, и тогда настройка сработает сама.
   assert.deepEqual(columnNamesOf({ columnNames: 'выдумка=Название' }), { выдумка: 'Название' })
+})
+
+test('rootOf: заданный корень приходит как есть', () => {
+  const out = rootOf({ defaultProjectRoot: '/projects' }, () => '/cwd')
+  assert.deepEqual(out, { path: '/projects', set: true })
+})
+
+test('rootOf: пустой корень откатывается на рабочую папку с признаком «не задан»', () => {
+  const out = rootOf({ defaultProjectRoot: '   ' }, () => '/cwd')
+  assert.deepEqual(out, { path: '/cwd', set: false })
+  assert.deepEqual(rootOf(undefined, () => '/cwd'), { path: '/cwd', set: false })
 })

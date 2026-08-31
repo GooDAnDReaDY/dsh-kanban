@@ -20,6 +20,23 @@ test('buildBoard отдаёт колонки в порядке воркфлоу'
   cleanup()
 })
 
+test('buildBoard без корня отдаёт пустой projectRoot, не падает', () => {
+  const { store, cleanup } = freshStore()
+  const out = buildBoard({ store, config, board: 'main' })
+  assert.deepEqual(out.projectRoot, { path: '', set: false })
+  cleanup()
+})
+
+test('buildBoard отдаёт projectRoot как пришёл', () => {
+  const { store, cleanup } = freshStore()
+  const out = buildBoard({
+    store, config, board: 'main',
+    projectRoot: { path: '/projects', set: true },
+  })
+  assert.deepEqual(out.projectRoot, { path: '/projects', set: true })
+  cleanup()
+})
+
 test('buildBoard считает карточки по колонкам', () => {
   const { store, cleanup } = freshStore()
   store.createTask({ board: 'main', column: 'backlog', title: 'A' })
