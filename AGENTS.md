@@ -2,7 +2,7 @@
 
 ## Package identity
 
-Keep all three package identity sites aligned as `@goodandready-private/dsh-kanban`:
+Keep all three package identity sites aligned as `@goodandready/dsh-kanban`:
 
 1. `package.json` package name
 2. `cordis.patch.yml` loader name

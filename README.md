@@ -16,7 +16,7 @@
 ## Установка
 
 ```bash
-dsh plugin --profile web add @goodandready-private/dsh-kanban
+dsh plugin --profile web add @goodandready/dsh-kanban
 ```
 
 Из локальной рабочей копии:
