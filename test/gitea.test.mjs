@@ -142,6 +142,51 @@ test('в поле имени вписали сам токен — готовно
   assert.equal(await gitea.isConfigured(), false)
 })
 
+test('признак готовности кэшируется, токен резолвится один раз', async () => {
+  // isConfigured стоит в горячем пути (список issue, поиск репозиториев), а
+  // резолв токена это поход в хранилище учётных данных. Пока настройки не
+  // менялись, повторный резолв не нужен.
+  let resolved = 0
+  const gitea = createGiteaClient({
+    getConfig: () => ({ giteaUrl: 'https://example.invalid', giteaTokenRef: 'GITEA_TOKEN' }),
+    resolveToken: async () => { resolved += 1; return 'секрет' },
+    fetchImpl: async () => okJson({}),
+  })
+  assert.equal(await gitea.isConfigured(), true)
+  assert.equal(await gitea.isConfigured(), true)
+  assert.equal(await gitea.isConfigured(), true)
+  assert.equal(resolved, 1)
+})
+
+test('смена настроек сбрасывает кэш готовности', async () => {
+  let config = { giteaUrl: 'https://one.invalid', giteaTokenRef: 'GITEA_TOKEN' }
+  let resolved = 0
+  const gitea = createGiteaClient({
+    getConfig: () => config,
+    resolveToken: async () => { resolved += 1; return 'секрет' },
+    fetchImpl: async () => okJson({}),
+  })
+  assert.equal(await gitea.isConfigured(), true)
+  // Человек поменял адрес в карточке настроек — признак обязан пересчитаться.
+  config = { giteaUrl: 'https://two.invalid', giteaTokenRef: 'GITEA_TOKEN' }
+  assert.equal(await gitea.isConfigured(), true)
+  assert.equal(resolved, 2)
+})
+
+test('кэш готовности не хранит сам токен', async () => {
+  let resolved = 0
+  const gitea = createGiteaClient({
+    getConfig: () => ({ giteaUrl: 'https://example.invalid', giteaTokenRef: 'GITEA_TOKEN' }),
+    resolveToken: async () => { resolved += 1; return 'секрет-значение' },
+    fetchImpl: async () => okJson({}),
+  })
+  assert.equal(await gitea.isConfigured(), true)
+  // Внутри кэша только булево — секрет нигде не держится.
+  const json = JSON.stringify(gitea)
+  assert.ok(!json.includes('секрет-значение'))
+  assert.equal(resolved, 1)
+})
+
 test('поиск репозиториев разбирает ответ инстанса', async () => {
   const { gitea } = stubClient(() => okJson({
     data: [{
