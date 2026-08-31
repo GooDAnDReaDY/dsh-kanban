@@ -245,3 +245,109 @@ test('число открытых задач берётся из того же �
   const rows = await gitea.searchRepos({ query: '' })
   assert.equal(rows[0].openIssues, 7)
 })
+
+test('список issue собирается со всех страниц', async () => {
+  // При 50+ открытых issue одна страница теряет хвост: подхват задач смотрел
+  // бы на неполную картину и не заводил карточки после пятидесятой.
+  const pages = {
+    1: Array.from({ length: 50 }, (_, i) => ({ number: i + 1, title: 'issue ' + (i + 1) })),
+    2: [{ number: 51, title: 'хвост' }, { number: 52, title: 'хвост2', pull_request: { merged: false } }],
+  }
+  const seen = []
+  const gitea = createGiteaClient({
+    getConfig: () => ({ giteaUrl: 'https://example.invalid', giteaTokenRef: 'GITEA_TOKEN' }),
+    resolveToken: async () => 'секрет',
+    fetchImpl: async (url) => {
+      const page = Number(new URL(url).searchParams.get('page'))
+      seen.push(page)
+      return okJson(pages[page] ?? [])
+    },
+  })
+  const rows = await gitea.listIssues({ owner: 'o', repo: 'r' })
+  assert.deepEqual(seen, [1, 2])
+  assert.equal(rows.length, 51, 'pull request со второй страницы отбрасывается')
+  assert.equal(rows[50].number, 51)
+})
+
+test('пустая страница останавливает перелистывание', async () => {
+  const seen = []
+  const gitea = createGiteaClient({
+    getConfig: () => ({ giteaUrl: 'https://example.invalid', giteaTokenRef: 'GITEA_TOKEN' }),
+    resolveToken: async () => 'секрет',
+    fetchImpl: async (url) => {
+      const page = Number(new URL(url).searchParams.get('page'))
+      seen.push(page)
+      // Первая страница полная (50 из 50) — значит дальше может быть ещё.
+      // Вторая пустая — инстанс сказал «конец», и третью не запрашиваем.
+      return okJson(page === 1 ? Array.from({ length: 50 }, (_, i) => ({ number: i + 1 })) : [])
+    },
+  })
+  const rows = await gitea.listIssues({ owner: 'o', repo: 'r' })
+  assert.deepEqual(seen, [1, 2])
+  assert.equal(rows.length, 50)
+})
+
+test('репозитории организации собираются со всех страниц', async () => {
+  const pages = {
+    1: Array.from({ length: 100 }, (_, i) => ({ name: 'r' + i, open_issues_count: 0 })),
+    2: [{ name: 'хвост', open_issues_count: 1 }],
+  }
+  const seen = []
+  const gitea = createGiteaClient({
+    getConfig: () => ({ giteaUrl: 'https://example.invalid', giteaTokenRef: 'GITEA_TOKEN' }),
+    resolveToken: async () => 'секрет',
+    fetchImpl: async (url) => {
+      const page = Number(new URL(url).searchParams.get('page'))
+      seen.push(page)
+      return okJson(pages[page] ?? [])
+    },
+  })
+  const rows = await gitea.listOrgRepos({ owner: 'o' })
+  assert.deepEqual(seen, [1, 2])
+  assert.equal(rows.length, 101)
+  assert.equal(rows[100].name, 'хвост')
+})
+
+test('ветки собираются со всех страниц', async () => {
+  // Усечённый список веток опасен: `branchOfTask` не найдёт ветку задачи и
+  // сочтёт её отсутствующей — карточка уедет не туда на пустом месте.
+  const pages = {
+    1: Array.from({ length: 100 }, (_, i) => ({ name: 'branch-' + i })),
+    2: [{ name: 'feat/123-x' }],
+  }
+  const seen = []
+  const gitea = createGiteaClient({
+    getConfig: () => ({ giteaUrl: 'https://example.invalid', giteaTokenRef: 'GITEA_TOKEN' }),
+    resolveToken: async () => 'секрет',
+    fetchImpl: async (url) => {
+      const page = Number(new URL(url).searchParams.get('page'))
+      seen.push(page)
+      return okJson(pages[page] ?? [])
+    },
+  })
+  const rows = await gitea.listBranches({ owner: 'o', repo: 'r' })
+  assert.deepEqual(seen, [1, 2])
+  assert.equal(rows.length, 101)
+  assert.equal(rows[100].name, 'feat/123-x')
+})
+
+test('pull request-ы собираются со всех страниц', async () => {
+  const pages = {
+    1: Array.from({ length: 50 }, (_, i) => ({ number: i + 1, title: 'pr ' + (i + 1) })),
+    2: [{ number: 51, title: 'pr 51' }],
+  }
+  const seen = []
+  const gitea = createGiteaClient({
+    getConfig: () => ({ giteaUrl: 'https://example.invalid', giteaTokenRef: 'GITEA_TOKEN' }),
+    resolveToken: async () => 'секрет',
+    fetchImpl: async (url) => {
+      const page = Number(new URL(url).searchParams.get('page'))
+      seen.push(page)
+      return okJson(pages[page] ?? [])
+    },
+  })
+  const rows = await gitea.listPulls({ owner: 'o', repo: 'r' })
+  assert.deepEqual(seen, [1, 2])
+  assert.equal(rows.length, 51)
+  assert.equal(rows[50].number, 51)
+})
