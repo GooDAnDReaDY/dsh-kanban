@@ -130,6 +130,21 @@ test('правка меняет заголовок и метки, но не ко
   cleanup()
 })
 
+test('правка пишет приоритет, чужие значения отбрасываются', () => {
+  const { store, cleanup } = freshStore()
+  const a = store.createTask({ board: 'main', column: 'backlog', title: 'A' })
+  const out = updateTask({ store, id: a.id, input: { priority: 'high' } })
+  assert.equal(out.task.priority, 'high')
+  // Чужое значение не роняет правку и не пишется.
+  const out2 = updateTask({ store, id: a.id, input: { priority: 'urgent', title: 'B' } })
+  assert.equal(out2.task.priority, 'high')
+  assert.equal(out2.task.title, 'B')
+  // Пустой приоритет сбрасывает.
+  const out3 = updateTask({ store, id: a.id, input: { priority: '' } })
+  assert.equal(out3.task.priority, '')
+  cleanup()
+})
+
 test('правка несуществующей задачи отдаёт 404', () => {
   const { store, cleanup } = freshStore()
   assert.equal(updateTask({ store, id: 'нет', input: { title: 'A' } }).status, 404)

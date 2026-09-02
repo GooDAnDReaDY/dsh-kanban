@@ -398,6 +398,40 @@ test('признак ожидания из хранилища тоже подн�
   assert.equal(liveRank({}), 3)
 })
 
+test('приоритет собирается и полем, и меткой в одно измерение', () => {
+  const tasks = [
+    { id: 'a', priority: 'high', labels: [] },
+    { id: 'b', priority: '', labels: ['priority/low'] },
+    { id: 'c', priority: 'medium', labels: ['priority/high'] },
+  ]
+  const prio = facetsOf(tasks).find((f) => f.ns === 'priority')
+  assert.ok(prio, 'измерение priority есть')
+  const values = prio.values.map((v) => v.value)
+  // Срочное сверху, дубли (high из поля и из метки) схлопываются.
+  assert.deepEqual(values, ['high', 'medium', 'low'])
+  assert.equal(prio.values.find((v) => v.value === 'high').count, 2)
+})
+
+test('отбор по приоритету не зависит от источника значения', () => {
+  const tasks = [
+    { id: 'a', priority: 'high', labels: [] },
+    { id: 'b', priority: '', labels: ['priority/high'] },
+    { id: 'c', priority: 'low', labels: [] },
+  ]
+  const picked = tasks.filter((t) => matchesFilters(t, { priority: ['high'] }))
+  assert.deepEqual(picked.map((t) => t.id), ['a', 'b'])
+})
+
+test('приоритетные поднимаются следом за живыми, ручной порядок цел', () => {
+  const tasks = [
+    { id: 'тихая', state: 'none', priority: '' },
+    { id: 'срочная', state: 'none', priority: 'high' },
+    { id: 'идёт', state: 'running', priority: 'low' },
+    { id: 'средняя', state: 'none', priority: 'medium' },
+  ]
+  assert.deepEqual(sortByLife(tasks).map((t) => t.id), ['идёт', 'срочная', 'средняя', 'тихая'])
+})
+
 test('группы идут от крупных к мелким', () => {
   // Проект с двадцатью задачами не должен теряться под однозадачными.
   const out = groupByRepo([
