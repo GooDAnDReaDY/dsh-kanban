@@ -260,6 +260,12 @@ compares the requested names against the actual exports. It is deliberately not
 part of `npm test`: the test suite runs without a core and without a profile.
 Run it on the machine where the harness lives, before publishing.
 
+## 💻 Cross-Platform Path Handling
+
+Task working directories (`resolveCwd`) respect operating system path conventions.
+On Windows, repository root fencing accounts for drive letters and backslash path
+separators, ensuring full test and runtime compatibility across POSIX and Windows.
+
 ## 📄 License
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
