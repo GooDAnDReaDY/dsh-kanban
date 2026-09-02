@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { resolve } from 'node:path'
 import { freshStore } from './helpers.mjs'
 import { withDefaults } from '../lib/config.js'
 import { buildStartMessage, resolveCwd, runTask, obtainAgent, resolveModel } from '../lib/launcher.js'
@@ -145,13 +146,13 @@ test('сообщение задачи из issue велит начать с pref
 
 test('cwd абсолютен и указывает на корень проекта', () => {
   const cwd = resolveCwd({ repo: 'dsh-kanban' }, config)
-  assert.ok(cwd.startsWith('/'))
+  assert.ok(cwd.startsWith('/') || /^[A-Za-z]:[\\/]/.test(cwd))
   assert.ok(cwd.endsWith('dsh-kanban'))
 })
 
 test('пустой корень откатывается на рабочую папку процесса', () => {
   const cwd = resolveCwd({ repo: 'x' }, withDefaults({}), () => '/где-то')
-  assert.equal(cwd, '/где-то/x')
+  assert.equal(cwd, resolve('/где-то/x'))
 })
 
 test('задача без репозитория запускается в самом корне', () => {
@@ -204,7 +205,7 @@ test('startTask отдаёт агенту рабочую папку абсолю
     agents, store, task, config, provider: 'p', model: 'm',
     mintSessionId, createMessage,
   })
-  assert.equal(seen.meta.cwd, '/projects/r')
+  assert.equal(seen.meta.cwd, resolve('/projects/r'))
   assert.equal(seen.agentOptions.provider, 'p')
   assert.equal(seen.agentOptions.model, 'm')
   cleanup()
