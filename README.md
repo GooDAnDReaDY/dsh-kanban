@@ -127,7 +127,25 @@ A due date can be set on any card. Overdue cards are highlighted, and a switch i
 the board header narrows the board to them alone — the answer to "what is already
 late" is one click, not a scan.
 
-### 6. Board Snapshot: Export and Import
+### 6. Ownership: Who Took the Task
+
+The board carries two different people per task and never confuses them: the
+**author** who filed the issue and the **assignee** who took it. Both arrive
+from Gitea, both are filter dimensions, and the assignee is shown on the card
+itself — "who is doing this" is asked more often than "who wrote it".
+
+A single button in the task window takes the task or drops it. Taking assigns
+the account whose token the board uses: the harness has no user of its own, so
+"me" is resolved by asking Gitea rather than by guessing. The change travels
+back to the issue through the outbound queue, so the board keeps working while
+Gitea is down; dropping sends an empty assignee list, because Gitea reads a
+missing field as "leave it alone".
+
+Assignment made in Gitea arrives on the next sync — in both directions,
+including removal. Filtering by "nobody" answers the question the board is
+opened for most often: what is free to pick up.
+
+### 7. Board Snapshot: Export and Import
 
 `GET /dsh-kanban/snapshot` returns the whole board as JSON; `POST` to the same
 route restores it. Import is idempotent: a task whose id is already on the board
