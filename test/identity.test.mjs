@@ -115,3 +115,16 @@ test('плагин не зовёт помощников ядра, которых
   }
   assert.match(src, /SETTINGS_NAMESPACE = '[a-z-]+'/, 'пространство настроек должно быть строкой')
 })
+
+test('каждый маршрут занимает свой путь', () => {
+  // Два обработчика на одном пути означают, что один из них не отвечает
+  // вовсе, а какой именно — решает порядок регистрации в ядре. Так импорт
+  // снимка доски отобрал путь у импорта issue из Gitea (#178): обе функции
+  // на месте, работает одна.
+  const src = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
+  const paths = (src.match(/path: '\/dsh-kanban[^']*'/g) ?? [])
+    .map((row) => row.slice("path: '".length, -1))
+  const twice = paths.filter((one, at) => paths.indexOf(one) !== at)
+  assert.deepEqual(twice, [], 'путь занят дважды: ' + twice.join(', '))
+  assert.ok(paths.length > 5, 'маршруты не нашлись — проверка смотрит не туда')
+})
