@@ -116,6 +116,27 @@ Unlike passive task boards, `dsh-kanban` actively drives the agents:
 
 ---
 
+### 5. Card Detail: Labels, Priority and Deadlines
+
+Cards carry more than a title. Labels and priority are editable right in the card
+window — for a Gitea-backed task they travel back to the issue, for a board-only
+task they live locally. Priority drives an "urgent first" ordering, so the column
+answers "what now" without reading every card.
+
+A due date can be set on any card. Overdue cards are highlighted, and a switch in
+the board header narrows the board to them alone — the answer to "what is already
+late" is one click, not a scan.
+
+### 6. Board Snapshot: Export and Import
+
+`GET /dsh-kanban/snapshot` returns the whole board as JSON; `POST` to the same
+route restores it. Import is idempotent: a task whose id is already on the board
+is skipped rather than duplicated, so re-running an import is safe.
+
+The snapshot is one resource with two verbs on purpose. An earlier build gave the
+upload the path `/dsh-kanban/import`, which the Gitea issue import already owned —
+two handlers on one path mean one of them silently never answers.
+
 ## 📦 Installation
 
 Install via DeepSeek Harness CLI:
