@@ -374,7 +374,11 @@ test('автор подписан на обоих языках и стоит в 
 })
 
 /** Ключи одного словаря браузерной половины. */
-function dictKeys(src, name) {
+function dictKeys(raw, name) {
+  // Возвраты каретки убираем до разбора: файл с CRLF ронял эту проверку с
+  // «словарь не найден», и расхождение ключей переставало ловиться вовсе —
+  // сторож молчал о своей настоящей цели, жалуясь на формат.
+  const src = raw.replaceAll('\r\n', '\n')
   const from = src.indexOf('    const ' + name + ' = {')
   const to = src.indexOf('\n    }\n', from)
   assert.ok(from > 0 && to > from, 'словарь ' + name + ' не найден')
