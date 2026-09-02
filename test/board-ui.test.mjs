@@ -345,7 +345,10 @@ test('очередь подписана на обоих языках', () => {
 test('меню карточки предлагает очередь, а стоящей в очереди — снятие', () => {
   // Роуты очереди без входа с карточки — мёртвый код: попасть в них нечем.
   const { src } = loadClient()
-  const menu = src.slice(src.indexOf("menu === task.id"), src.indexOf("menu === task.id") + 2000)
+  // Окно берём до конца списка пунктов, а не фиксированной длины: каждый
+  // новый пункт меню сдвигал границу и ронял проверку на ровном месте.
+  const from = src.indexOf("menu === task.id")
+  const menu = src.slice(from, src.indexOf("dkb-taskCard", from))
   assert.ok(menu.includes('props.onQueue(task)'), 'нет входа в очередь')
   assert.ok(menu.includes('props.onUnqueue(task)'), 'нельзя снять с очереди')
   assert.ok(menu.includes("task.state === 'queued'"), 'снятие предлагается не той задаче')
@@ -354,7 +357,9 @@ test('меню карточки предлагает очередь, а стоя
 test('задача из архива открывается тем же окном', () => {
   // Архив — не братская могила: задачу туда убрали, а не стёрли.
   const { src } = loadClient()
-  const at = src.lastIndexOf("dkb-archiveRow")
+  // Ищем именно список архива: строки такого же вида есть теперь и на
+  // экране метрик, и «последнее вхождение» стало указывать не туда.
+  const at = src.indexOf("archive.map(")
   const row = src.slice(at, src.indexOf("archive.restore", at))
   assert.ok(row.includes('setOpenTask(task)'), 'строку архива нельзя открыть')
 })

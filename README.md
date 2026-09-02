@@ -216,6 +216,32 @@ npm test
 
 ---
 
+### 8. Metrics: Where the Work Stands
+
+The transition log has been filling up since day one, but it could only be read
+one task at a time. The **Metrics** screen adds it up: how long tasks sit in each
+column (median first — one task forgotten for half a year drags the average
+until it describes nothing), how many reached Done in the last week and month,
+and which tasks have been sitting still longer than the threshold.
+
+Sitting time counts from entering the column, not from creation: a task can be
+old and still move every day. Nothing is written — a metric that writes stops
+being an observation and becomes another source of truth to disagree with.
+
+### 9. Milestones and Reviving a Dead Session
+
+The milestone travels with the issue and becomes a filter dimension of its own,
+so "what is left before 0.2.0" is answered on the board rather than in Gitea.
+Removing a milestone is news too, so an emptied field is synced like any other
+change. Setting a milestone from the board is deliberately out of scope for now:
+reading first, writing later, or we get a second place where it is edited.
+
+A task whose session died — the harness restarted, the agent is gone — shows
+"stopped". Its card now offers **resume work**: the old session is tried first,
+and only if it cannot be revived does a new one start. The board says which of
+the two happened, because "continued" and "started over" differ by whether the
+conversation still exists.
+
 ## 🔌 Core Compatibility Check
 
 A named import of an export the installed core no longer has is a `SyntaxError`
