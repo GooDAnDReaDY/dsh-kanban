@@ -4,7 +4,7 @@ import { freshStore } from './helpers.mjs'
 import { withDefaults } from '../lib/config.js'
 import {
   buildBoard, applyMove, createTask, updateTask, deleteTask, taskLog,
-  taskBySession, isTrustedRequest, parseTaskPath,
+  taskBySession, isTrustedRequest, parseTaskPath, exportBoard, importBoard,
 } from '../lib/routes.js'
 
 const config = withDefaults({})
@@ -217,4 +217,51 @@ test('путь задачи разбирается вместе с действ�
 
 test('идентификатор задачи в пути раскодируется', () => {
   assert.equal(parseTaskPath('/dsh-kanban/task/a%2Fb').id, 'a/b')
+})
+
+test('экспорт отдаёт все доски, задачи и переходы', () => {
+  const { store, cleanup } = freshStore()
+  const a = store.createTask({ board: 'main', column: 'backlog', title: 'A', priority: 'high', dueAt: 1700000000000 })
+  store.addTransition({ taskId: a.id, fromCol: undefined, toCol: 'backlog', source: 'manual' })
+  const dump = exportBoard({ store })
+  assert.equal(dump.version, 1)
+  assert.ok(dump.boards.some((b) => b.id === 'main'))
+  assert.equal(dump.tasks.length, 1)
+  assert.equal(dump.tasks[0].title, 'A')
+  assert.equal(dump.tasks[0].priority, 'high')
+  assert.equal(dump.tasks[0].dueAt, 1700000000000)
+  assert.equal(dump.transitions.length, 1)
+  cleanup()
+})
+
+test('импорт восстанавливает задачи идемпотентно', () => {
+  const { store, cleanup } = freshStore()
+  const input = {
+    version: 1,
+    boards: [{ id: 'main', title: 'Проектная доска', kind: 'project', position: 'i', createdAt: 1 }],
+    tasks: [{
+      id: 'x1', board: 'main', column: 'backlog', title: 'Из бэкапа', body: 'тело',
+      priority: 'medium', dueAt: 1700000000000, labels: ['bug'], createdAt: 2,
+    }],
+  }
+  const first = importBoard({ store, input })
+  assert.equal(first.imported, 1)
+  assert.equal(first.skipped, 0)
+  assert.equal(store.getTask('x1').title, 'Из бэкапа')
+  assert.equal(store.getTask('x1').priority, 'medium')
+  // Повторный импорт не плодит дублей.
+  const second = importBoard({ store, input })
+  assert.equal(second.imported, 0)
+  assert.equal(second.skipped, 1)
+  assert.equal(store.listTasks().length, 1)
+  cleanup()
+})
+
+test('импорт отклоняет битый снимок', () => {
+  const { store, cleanup } = freshStore()
+  assert.equal(importBoard({ store, input: null }).status, 400)
+  assert.equal(importBoard({ store, input: {} }).status, 400)
+  assert.equal(importBoard({ store, input: { version: 2, tasks: [] } }).status, 400)
+  assert.equal(importBoard({ store, input: { version: 1, tasks: 'не список' } }).status, 400)
+  cleanup()
 })
