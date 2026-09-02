@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 
 import {
   splitLabel, facetsOf, matchesFilters, anySelected, toggleValue, clearFilters,
-  KNOWN_ORDER, REPO, AUTHOR, labelColor, colorsOfIssue, sortByLife, liveRank, groupByRepo,
+  KNOWN_ORDER, REPO, AUTHOR, ASSIGNEE, labelColor, colorsOfIssue, sortByLife, liveRank, groupByRepo,
 } from '../lib/filters.js'
 import { applyObservation } from '../lib/sync.js'
 import { buildBoard } from '../lib/routes.js'
@@ -43,18 +43,18 @@ test('вторая косая черта остаётся в значении', 
 // ------------------------------------------------- сбор отборов
 
 test('пространства собираются из меток на карточках, а не из зашитого списка', () => {
-  assert.deepEqual(nsOf(TASKS), [REPO, AUTHOR, 'type', 'priority', 'status'])
+  assert.deepEqual(nsOf(TASKS), [REPO, ASSIGNEE, AUTHOR, 'type', 'priority', 'status'])
 })
 
 test('репозиторий идёт первым, известные пространства — в своём порядке', () => {
   const tasks = [{ repo: 'r', labels: ['release/next', 'type/bug', 'risk/breaking', 'priority/high'] }]
-  assert.deepEqual(nsOf(tasks), [REPO, AUTHOR, 'type', 'priority', 'risk', 'release'])
+  assert.deepEqual(nsOf(tasks), [REPO, ASSIGNEE, AUTHOR, 'type', 'priority', 'risk', 'release'])
 })
 
 test('незнакомое пространство дописывается в конец по алфавиту', () => {
   // Заведут в Gitea новое — оно появится само, без правки кода и без релиза.
   const tasks = [{ repo: 'r', labels: ['выдумка/раз', 'type/bug', 'ещё-выдумка/два'] }]
-  assert.deepEqual(nsOf(tasks), [REPO, AUTHOR, 'type', 'выдумка', 'ещё-выдумка'])
+  assert.deepEqual(nsOf(tasks), [REPO, ASSIGNEE, AUTHOR, 'type', 'выдумка', 'ещё-выдумка'])
 })
 
 test('значения идут по алфавиту и со счётчиком', () => {
