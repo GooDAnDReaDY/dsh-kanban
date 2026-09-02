@@ -141,6 +141,15 @@ back to the issue through the outbound queue, so the board keeps working while
 Gitea is down; dropping sends an empty assignee list, because Gitea reads a
 missing field as "leave it alone".
 
+Three shortcuts follow from ownership. The column groups **by assignee** as
+well as by project, with "nobody took it" always first — that group is what the
+layout is opened for. A **"Mine: N"** button in the header narrows the board to
+your own tasks in one click; it is drawn only when Gitea told the board who you
+are and you actually have tasks, because a lying counter is worse than none.
+And **starting work takes the task**: a free task becomes yours on launch, alone
+or as part of a batch, while a task already assigned to someone else is left
+alone.
+
 Assignment made in Gitea arrives on the next sync — in both directions,
 including removal. Filtering by "nobody" answers the question the board is
 opened for most often: what is free to pick up.
@@ -206,6 +215,24 @@ npm test
 ```
 
 ---
+
+## 🔌 Core Compatibility Check
+
+A named import of an export the installed core no longer has is a `SyntaxError`
+at parse time: the whole plugin tree fails to load and the harness restarts in a
+loop. That happened twice in one week, and both times the owner found out before
+the tests did.
+
+```bash
+npm run compat            # uses $DSH_HOME, or ~/.dsh/profiles/web
+npm run compat -- /path/to/profile
+```
+
+The check reads every `import { … } from '@deepseek-ai/…'` in `lib/`, resolves
+each package the way the harness resolves it — from the profile directory — and
+compares the requested names against the actual exports. It is deliberately not
+part of `npm test`: the test suite runs without a core and without a profile.
+Run it on the machine where the harness lives, before publishing.
 
 ## 📄 License
 
