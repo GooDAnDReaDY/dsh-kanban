@@ -145,6 +145,35 @@ test('правка пишет приоритет, чужие значения о
   cleanup()
 })
 
+test('правка пишет дедлайн, ноль снимает, мусор отбрасывается', () => {
+  const { store, cleanup } = freshStore()
+  const a = store.createTask({ board: 'main', column: 'backlog', title: 'A' })
+  const out = updateTask({ store, id: a.id, input: { dueAt: 1700000000000 } })
+  assert.equal(out.task.dueAt, 1700000000000)
+  // Отрицательное и не-число не пишутся.
+  const out2 = updateTask({ store, id: a.id, input: { dueAt: -5, title: 'B' } })
+  assert.equal(out2.task.dueAt, 1700000000000)
+  assert.equal(out2.task.title, 'B')
+  // Ноль снимает дедлайн.
+  const out3 = updateTask({ store, id: a.id, input: { dueAt: 0 } })
+  assert.equal(out3.task.dueAt, 0)
+  cleanup()
+})
+
+test('buildBoard помечает просроченные по дедлайну', () => {
+  const { store, cleanup } = freshStore()
+  const now = Date.now()
+  store.createTask({ board: 'main', column: 'backlog', title: 'прошёл', dueAt: now - 1000 })
+  store.createTask({ board: 'main', column: 'backlog', title: 'будущий', dueAt: now + 100000 })
+  store.createTask({ board: 'main', column: 'backlog', title: 'без срока' })
+  const out = buildBoard({ store, config, board: 'main' })
+  const byTitle = Object.fromEntries(out.tasks.map((t) => [t.title, t]))
+  assert.equal(byTitle['прошёл'].overdue, true)
+  assert.equal(byTitle['будущий'].overdue, false)
+  assert.equal(byTitle['без срока'].overdue, false)
+  cleanup()
+})
+
 test('правка несуществующей задачи отдаёт 404', () => {
   const { store, cleanup } = freshStore()
   assert.equal(updateTask({ store, id: 'нет', input: { title: 'A' } }).status, 404)
