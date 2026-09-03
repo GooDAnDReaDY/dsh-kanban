@@ -266,6 +266,15 @@ Task working directories (`resolveCwd`) respect operating system path convention
 On Windows, repository root fencing accounts for drive letters and backslash path
 separators, ensuring full test and runtime compatibility across POSIX and Windows.
 
+## 🌳 Git Worktree Isolation
+
+When in-progress work begins on a repository task, the agent session is automatically
+isolated into a dedicated git worktree (`$DSH_HOME/worktrees/<repo-key>/<task-id>/` on branch
+`task/<id>-<slug>`). The worktree is registered in DSH's `workspaceRegistry` for full UI
+visibility and multi-agent concurrency protection. During the `cleanup` phase, uncommitted files
+are detected via `git status --porcelain` to prevent data loss, followed by clean worktree and workspace
+deregistration.
+
 ## 📄 License
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
