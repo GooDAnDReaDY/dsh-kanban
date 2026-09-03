@@ -275,6 +275,14 @@ visibility and multi-agent concurrency protection. During the `cleanup` phase, u
 are detected via `git status --porcelain` to prevent data loss, followed by clean worktree and workspace
 deregistration.
 
+## ⚙️ Host-Side Automation & Governance (v0.1.26+)
+
+- **Host-Side Cron Scheduler**: Autonomous 5-field cron parsing (`分 时 日 月 周`) executed in the host Node.js process. Tasks trigger reliably in the background without needing an open browser tab.
+- **Power Inhibitor (`preventIdleSleep`)**: Cross-platform system idle sleep prevention (PowerShell Win32 `SetThreadExecutionState` on Windows, `/usr/bin/systemd-inhibit` on Linux, `/usr/bin/caffeinate` on macOS) active while tasks or sessions run.
+- **PROGRESSDUMP Handover**: Structured progress snapshots (`<<<PROGRESSDUMP ... >>>PROGRESSDUMP`) with secret redaction (`[REDACTED]`) and slash-command suppression, formatting clean task handover preambles for subsequent agents.
+- **Permission Confirmation Gate**: Tasks requesting permissions exceeding the configured baseline (`sessionDefaultPermission`) enter a gated state requiring explicit human confirmation before launch. Modifying parameters resets the gate.
+- **Task Execution History (`runs`)**: Last 20 execution attempts per task stored directly inside SQLite `tasks.runs`, tracking duration, outcome (`succeeded`, `failed`, `cancelled`), model, and direct links to session chats.
+
 ## 📄 License
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
