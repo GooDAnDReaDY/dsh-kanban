@@ -265,3 +265,21 @@ test('импорт отклоняет битый снимок', () => {
   assert.equal(importBoard({ store, input: { version: 1, tasks: 'не список' } }).status, 400)
   cleanup()
 })
+
+test('все зарегистрированные маршруты имеют уникальные пути (#178)', async () => {
+  const { readFileSync } = await import('node:fs')
+  const { fileURLToPath } = await import('node:url')
+  const path = await import('node:path')
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const src = readFileSync(path.join(root, 'lib/index.js'), 'utf8')
+  const matches = [...src.matchAll(/path:\s*'([^']+)'/g)].map((m) => m[1])
+  assert.ok(matches.length > 0, 'маршруты не найдены в lib/index.js')
+  const seen = new Set()
+  const duplicates = []
+  for (const p of matches) {
+    if (seen.has(p)) duplicates.push(p)
+    seen.add(p)
+  }
+  assert.deepEqual(duplicates, [], 'найдены повторяющиеся пути маршрутов: ' + duplicates.join(', '))
+})
+
