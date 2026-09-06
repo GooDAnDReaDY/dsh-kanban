@@ -81,6 +81,7 @@ test('при живом слоте плагинов карточка встаё�
   assert.ok(card, 'карточка не зарегистрирована')
   assert.equal(card.key, 'dsh-kanban', 'ключ слота не равен пространству настроек')
   assert.equal(card.locale, 'dsh-kanban', 'без locale компонент не получит props.t')
+  assert.equal(registered.some((e) => e.name === 'settings.section'), false, 'запасной раздел не должен регистрироваться при наличии plugin.item')
 })
 
 test('без слота плагинов карточка уходит в запасной раздел', () => {

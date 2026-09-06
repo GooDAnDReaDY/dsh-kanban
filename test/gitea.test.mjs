@@ -81,7 +81,7 @@ test('подделанный репозиторий отвергается до 
 
 test('без адреса инстанса запрос не уходит', async () => {
   const { gitea, calls } = stubClient(() => okJson({}), { giteaUrl: '' })
-  await assert.rejects(() => gitea.listIssues({ owner: 'o', repo: 'r' }), /адрес/)
+  await assert.rejects(() => gitea.listIssues({ owner: 'o', repo: 'r' }), (err) => err.code === 'unconfigured' && /Gitea URL/.test(err.message))
   assert.equal(calls.length, 0)
 })
 
