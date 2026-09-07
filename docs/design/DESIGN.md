@@ -11,7 +11,7 @@
   - Карточка настроек в слоте settings.plugin.item (пространство dsh-kanban).
   - Чип активной задачи в conversation.session.header.utilities.
   - Пункт бокового меню для вызова экрана доски.
-- API: HTTP эндпоинты /dsh-kanban/* (board, snapshot, task, sync, webhook, metrics, whoami).
+- API: HTTP эндпоинты /dsh-kanban/* (board, snapshot, task, sync, webhook, metrics, whoami, checklist, report, comments, accept, reject).
 - CLI: node tools/compat.mjs (проверка совместимости экспортов ядра).
 - Документация: README.md, docs/README.ru.md, docs/README.zh.md, index.md.
 
@@ -27,7 +27,7 @@
 - Accessibility: Нативные кнопки button, role="status" для сообщений, семантичные поля ввода с aria-label/label.
 
 ## Components And States
-- Компоненты: BoardScreen, Column, Card, TaskDrawer, KanbanSettingsCard, TaskChip, MetricsModal.
+- Компоненты: BoardScreen, Column, Card, TaskDrawer (включая секции DoD Checklist, Execution Report, Comments Thread, Review Acceptance Gate), KanbanSettingsCard, TaskChip, MetricsModal.
 - Loading / empty / error / success:
   - Загрузка: состояние скелетона/лоадера без блокировки скролла.
   - Пустые колонки: пунктирная область перетаскивания.
@@ -52,3 +52,10 @@
 - 2026-09-02 — Снимок доски объединён на маршруте /dsh-kanban/snapshot (GET: выгрузка, POST: загрузка).
 - 2026-09-03 — Изоляция сессий задач в git worktree ($DSH_HOME/worktrees/<repo-key>/<task-id>/ на ветке task/<id>-<slug>), регистрация воркдерева в workspaceRegistry, проверка dirtyFiles и безопасная очистка в фазе cleanup (#193).
 - 2026-09-03 — Серверная инфраструктура автономности и безопасности (#195): Host-Side 5-field Cron, PowerInhibitor (кроссплатформенная блокировка сна системы во время работы задач), PROGRESSDUMP (фиксация срезов контекста, маскирование секретов и передача эстафеты), Permission Confirmation Gate (ручное одобрение прав выше базовых), инъекция секции доски в systemPrompt и хранение истории запусков прямо в карточке задачи (tasks.runs).
+
+- 2026-09-07 — Контур качества и приёмка человеком (#205–#209):
+  - Протокольный шлюз: колонка done является исключительной границей приёмки человеком; инструменту board_move запрещён прямой перевод задачи в done.
+  - DoD Acceptance Checklist: перевод в review блокируется до закрытия обязательных пунктов чеклиста с фиксацией доказательств (evidence).
+  - Structured Report: фиксация отчёта выполнения (summary, changedFiles, checksRun, artifacts, risks) в карточке задачи.
+  - Двусторонний цикл приёмки: явные действия человека Accept (в done) и Reject (возврат в in-progress с обязательной причиной rejectReason, инжектируемой в следующую сессию агента).
+  - Ветка комментариев к задаче с поддержкой ролей user и agent для сквозного диалога прямо в Task Drawer.
