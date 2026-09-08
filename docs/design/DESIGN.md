@@ -67,6 +67,13 @@
   - Фильтрация сессий субагентов: сессии с маркером subagent (origin === 'subagent' или parentId !== undefined) исключаются из liveSessions и не перезаписывают состояние корневых задач (#215).
 ## Locked Decisions
 
+### 2026-09-08: Релиз v0.2.0 — Milestone (SSE, Chat Sync, Templates, Two-Column Drawer, Multi-Repo) (#210, #219, #220, #222, #225)
+- **Live SSE Channel (`/dsh-kanban/events`)**: Постоянное SSE-соединение с автоматическим переподключением для мгновенного пуша обновлений доски (`task:change`, `board:change`) без избыточного поллинга (#222).
+- **Auto-sync Sessions (`autoSyncSessions`)**: Опциональная автоматическая синхронизация стандартных диалогов чата DSH в карточки доски канбана с надежной фильтрацией внутренних сессий и субагентов (#225).
+- **Task Templates Library (`/dsh-kanban/templates`)**: Библиотека из 5 встроенных типовых шаблонов (Feature, Bugfix, Refactor, Security, Release) с предзаполненными чеклистами DoD и шаблонами промптов (#220).
+- **Two-Column Drawer Layout**: Адаптивный двухколоночный макет для TaskDrawer на экранах шириной от 960px с разделением метаданных и контентной области (#219).
+- **Multi-Repo Workspace Mirroring**: Сканирование нескольких вложенных git-репозиториев (`findWorkspaceGitRepos`) и подготовка зеркальных воркдеревьев на единой ветке задачи (`prepareMultiRepoMirror`) (#210).
+
 ### 2026-09-08: Релиз Vector 4 (UX оператора, управление моделями и аналитика) (#217, #218, #221, #223, #228)
 - **reasoningEffort**: Добавлен селектор глубины рассуждения (low, medium, high) в карточке `TaskDrawer`, сохраняется в SQLite и передается в метаданные сессии DSH для моделей с рассуждением (DeepSeek-R1, OpenAI o1/o3).
 - **Экспорт в CSV с UTF-8 BOM**: Добавлен эндпоинт `GET /dsh-kanban/export.csv` и кнопка в тулбаре для выгрузки аналитики задач в Microsoft Excel без искажения кодировки.
