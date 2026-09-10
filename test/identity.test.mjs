@@ -35,12 +35,12 @@ test('браузерная половина отдаёт apply, службы и 
   assert.equal(typeof exported.helpers.neighboursFor, 'function')
 })
 
-test('настроечный слот плагинов пробуется первым, а не запасной раздел', () => {
+test('карточка настроек плагина регистрируется только в settings.plugin.item (#238)', () => {
   const src = read('lib/client.js')
   const plugin = src.indexOf("name: 'settings.plugin.item'")
   const section = src.indexOf("name: 'settings.section'")
-  assert.ok(plugin > 0, 'карточка не пробует слот настроек плагинов')
-  assert.ok(section > plugin, 'запасной раздел объявлен раньше основного слота')
+  assert.ok(plugin > 0, 'карточка не регистрирует слот настроек плагинов')
+  assert.equal(section, -1, 'обнаружена регистрация раздела верхнего уровня settings.section')
 })
 
 test('встраивание в оболочку опирается на объявленные селекторы', () => {

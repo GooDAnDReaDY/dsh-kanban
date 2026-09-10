@@ -84,18 +84,18 @@ test('при живом слоте плагинов карточка встаё�
   assert.equal(registered.some((e) => e.name === 'settings.section'), false, 'запасной раздел не должен регистрироваться при наличии plugin.item')
 })
 
-test('без слота плагинов карточка уходит в запасной раздел', () => {
-  // Соседний плагин делает так же: если настроечного слота в сборке нет,
-  // регистрация не пройдёт, и настройки просто пропали бы.
+test('плагин не регистрирует раздел верхнего уровня settings.section (#238)', () => {
+  // По нашему правилу набор настроек плагина живёт строго карточкой в settings.plugin.item,
+  // не засоряя плоский общий список настроек верхнего уровня.
   const { ctx, registered } = stubCtx({ available: ['settings.section'] })
   exported.apply(ctx)
-  assert.ok(registered.some((e) => e.name === 'settings.section'))
+  assert.equal(registered.some((e) => e.name === 'settings.section'), false)
 })
 
 test('доска больше не занимает слот настроек', () => {
   // Раздела верхнего уровня в сборке нет, а настройки — не место для доски:
   // она встраивается прямо в оболочку.
-  const { ctx, registered } = stubCtx({ available: ['settings.plugin.item', 'settings.section'] })
+  const { ctx, registered } = stubCtx({ available: ['settings.plugin.item'] })
   exported.apply(ctx)
   assert.equal(registered.filter((e) => e.id === '@goodandready/dsh-kanban.board').length, 0)
 })
