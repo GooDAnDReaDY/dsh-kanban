@@ -66,6 +66,7 @@
   - Фильтрация structural noise в проверках dirtyFiles: в checkWorktreeDirty добавлен флаг --ignore-submodules=all, исключающий ложные блокировки удаления воркдеревьев из-за субмодулей и дрейфа gitlinks (#213).
   - Фильтрация сессий субагентов: сессии с маркером subagent (origin === 'subagent' или parentId !== undefined) исключаются из liveSessions и не перезаписывают состояние корневых задач (#215).
 ## Locked Decisions
+- **0.2.1**: Карточка настроек плагина перенесена строго в слот `settings.plugin.item` (раздел «Настройки → Плагины → Настройки плагинов») без одновременной дублирующей регистрации в `settings.section` (Issue #236).
 
 ### 2026-09-08: Релиз v0.2.0 — Milestone (SSE, Chat Sync, Templates, Two-Column Drawer, Multi-Repo) (#210, #219, #220, #222, #225)
 - **Live SSE Channel (`/dsh-kanban/events`)**: Постоянное SSE-соединение с автоматическим переподключением для мгновенного пуша обновлений доски (`task:change`, `board:change`) без избыточного поллинга (#222).
