@@ -67,3 +67,21 @@ test('runTask с resume: true отправляет событие task-resume и
     cleanup()
   }
 })
+test('POST /dsh-kanban/task/:id/resume forwards ctx.get("permissionPresets") to launcher', async () => {
+  let capturedOptions = null;
+  const mockPresets = [{ id: 'strict', name: 'Strict' }];
+  const mockCtx = {
+    get(name) {
+      if (name === 'permissionPresets') return mockPresets;
+      if (name === 'workspaceRegistry') return {};
+      if (name === 'settingsScope') return { bind: () => ({ getSnapshot: () => ({ available: true }) }) };
+      return null;
+    },
+    permissions: [{ id: 'wrong', name: 'Wrong' }],
+    schema: { extend: () => {} },
+    on: () => {},
+    emit: () => {},
+    route: () => {}
+  };
+  assert.strictEqual(mockCtx.get('permissionPresets'), mockPresets);
+});
