@@ -241,3 +241,28 @@ test('сверка подхватывает автора у карточек, п
   assert.equal(store.getTask(task.id).author, 'vadim')
   cleanup()
 })
+
+test('withBackoff повторяет попытку и возвращает результат при успехе', async () => {
+  const { withBackoff } = await import('../lib/sync.js')
+  let count = 0
+  const res = await withBackoff(async () => {
+    count += 1
+    if (count < 2) throw new Error('временный сбой')
+    return 'успех'
+  }, { retries: 2, baseMs: 10 })
+  assert.equal(res, 'успех')
+  assert.equal(count, 2)
+})
+
+test('withBackoff выбрасывает ошибку после исчерпания попыток', async () => {
+  const { withBackoff } = await import('../lib/sync.js')
+  let count = 0
+  await assert.rejects(async () => {
+    await withBackoff(async () => {
+      count += 1
+      throw new Error('постоянная ошибка')
+    }, { retries: 2, baseMs: 10 })
+  }, /постоянная ошибка/)
+  assert.equal(count, 3)
+})
+

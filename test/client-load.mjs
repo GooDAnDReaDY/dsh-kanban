@@ -28,6 +28,7 @@ export function loadClient({ storage } = {}) {
     useEffect: () => {},
     useRef: (v) => ({ current: v }),
     useSyncExternalStore: (_sub, get) => get(),
+    memo: (fn) => fn,
   }
   const exported = spec.factory((name) => (name === 'react' ? react : {}))
   return { spec, exported, src, sandbox }
