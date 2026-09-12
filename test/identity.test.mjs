@@ -128,3 +128,12 @@ test('каждый маршрут занимает свой путь', () => {
   assert.deepEqual(twice, [], 'путь занят дважды: ' + twice.join(', '))
   assert.ok(paths.length > 5, 'маршруты не нашлись — проверка смотрит не туда')
 })
+
+test('схема Config в index.js импортирует z из @deepseek-ai/schemastery (#246)', () => {
+  const src = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
+  assert.ok(
+    /import\s+z\s+from\s+'@deepseek-ai\/schemastery'/.test(src),
+    'index.js использует схему Config (z.object), но z не импортирован из @deepseek-ai/schemastery',
+  )
+})
+
