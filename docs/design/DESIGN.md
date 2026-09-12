@@ -66,7 +66,7 @@
   - Фильтрация structural noise в проверках dirtyFiles: в checkWorktreeDirty добавлен флаг --ignore-submodules=all, исключающий ложные блокировки удаления воркдеревьев из-за субмодулей и дрейфа gitlinks (#213).
   - Фильтрация сессий субагентов: сессии с маркером subagent (origin === 'subagent' или parentId !== undefined) исключаются из liveSessions и не перезаписывают состояние корневых задач (#215).
 ## Locked Decisions
-- **0.2.6 (Issue #246)**: Исправлен критический сбой загрузки плагина в Cordis loader (`ReferenceError: z is not defined`): добавлен явный импорт `import z from '@deepseek-ai/schemastery'` в `lib/index.js` и регрессионный тест в `test/identity.test.mjs`.
+- **0.2.6 (Issue #246)**: Исправлен критический сбой загрузки плагина в Cordis loader (`ReferenceError`): добавлен явный импорт `import z from '@deepseek-ai/schemastery'`, `openStore`, `CONFIG_DEFAULTS`, `CONFIG_HINTS`, `rootOf`, `join`, `homedir` в `lib/index.js`, а также добавлен автоматический тест валидации импорта и жизненного цикла `test/index-load.test.mjs`.
 - **0.2.5 (Issue #244)**: Комплексная оптимизация производительности и размера бандла:
   - Облегчение `lib/client.js` до ~214 КБ (безопасный запас относительно лимита DSH Store 256 КБ) через сжатие служебных комментариев и алиасинг вызовов React.
   - Композитные индексы SQLite (`tasks_board_active`, `tasks_gitea_issue`, `tasks_cron_next`, `tasks_queued`) и прагмы WAL/NORMAL/OPTIMIZE для быстрого поиска и снижения блокировок ввода-вывода.
