@@ -82,6 +82,14 @@
 - **Two-Column Drawer Layout**: Адаптивный двухколоночный макет для TaskDrawer на экранах шириной от 960px с разделением метаданных и контентной области (#219).
 - **Multi-Repo Workspace Mirroring**: Сканирование нескольких вложенных git-репозиториев (`findWorkspaceGitRepos`) и подготовка зеркальных воркдеревьев на единой ветке задачи (`prepareMultiRepoMirror`) (#210).
 
+### 2026-09-13: Релиз Vector 5 (Epic Triage, Live Observability & Advanced Workflow Suite) (#248)
+- **Triage & Epic Decomposition**: Превращение задачи в Эпик (`isEpic = 1`) с созданием дочерних подзадач (`parentId = <epicId>`) и связкой с Gitea issues. Отображение бейджа «👑 Epic», индикатора прогресса `{done}/{total}` и прогресс-бара на карточке, управление подзадачами в карточке задачи и инструмент агента `board_decompose`.
+- **Atomic DoD Checklist Tool (`board_checklist_item`)**: Атомарное переключение пунктов чеклиста агентом по подстроке текста или индексу без перезаписи списка, эндпоинт `POST /dsh-kanban/task/:id/checklist-toggle`.
+- **Live Agent Console**: Терминальный блок для сессий задач с моноширинным ANSI-стилизованным выводом и отображением прогресса.
+- **Quick Filter Bar**: Быстрые фильтры над колонками (`All`, `Active`, `Review`, `Epics`, `Silent`) для мгновенного отбора задач.
+- **One-Click Gitea PR**: Создание Pull Request прямо из Review Acceptance Gate (`POST /dsh-kanban/task/:id/pr`) через `gitea.createPullRequest({ head, base })` с отображением прямой ссылки на PR в Gitea.
+- **Строгая чистота пакета и локализация**: Исключение `docs/plans` и `docs/design` из tarball релиза; канонический английский (`en`) + китайский (`zh`) в коде; вся русская локализация управляется через регистрацию issue в `goodandready/dsh-russian-lang`.
+
 ### 2026-09-08: Релиз Vector 4 (UX оператора, управление моделями и аналитика) (#217, #218, #221, #223, #228)
 - **reasoningEffort**: Добавлен селектор глубины рассуждения (low, medium, high) в карточке `TaskDrawer`, сохраняется в SQLite и передается в метаданные сессии DSH для моделей с рассуждением (DeepSeek-R1, OpenAI o1/o3).
 - **Экспорт в CSV с UTF-8 BOM**: Добавлен эндпоинт `GET /dsh-kanban/export.csv` и кнопка в тулбаре для выгрузки аналитики задач в Microsoft Excel без искажения кодировки.
