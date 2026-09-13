@@ -108,3 +108,81 @@ test('lib/index.js apply() регистрирует эффект и коррек
     }
   }
 })
+
+test('lib/index.js обработчики с чтением тела (readBody) не падают с ReferenceError на MAX_BODY_BYTES (#250)', async () => {
+  const { Readable } = await import('node:stream')
+  const mod = await import('../lib/index.js')
+  const registeredRoutes = new Map()
+  const effects = []
+
+  const mockCtx = {
+    inject(deps, fn) {
+      fn({
+        settings: {
+          register: () => ({ get: () => ({}), watch: () => {} }),
+        },
+      })
+    },
+    effect(fn, desc) {
+      effects.push({ fn, desc })
+      return fn()
+    },
+    on() {},
+    get() { return null },
+    credentials: {
+      resolve: async () => ({ value: 'test' }),
+    },
+    webServer: {
+      use() {},
+      register(route) {
+        registeredRoutes.set(route.path, route)
+      },
+    },
+    agents: {
+      get() { return null },
+    },
+    logger: {
+      warn() {},
+      info() {},
+      error() {},
+    },
+  }
+
+  mod.apply(mockCtx, {})
+
+  const route = registeredRoutes.get('/dsh-kanban/project-task')
+  assert.ok(route, 'Маршрут /dsh-kanban/project-task должен быть зарегистрирован')
+
+  // Создаем mock req со стримом данных
+  const req = new Readable({
+    read() {
+      this.push(Buffer.from(JSON.stringify({ title: 'Test', repo: 'test-repo' })))
+      this.push(null)
+    },
+  })
+  req.method = 'POST'
+  req.headers = { host: 'localhost' }
+
+  let statusSent = null
+  let bodySent = null
+  const res = {
+    writeHead(code, headers) { statusSent = code },
+    end(body) { bodySent = body },
+  }
+
+  // Не должно бросать ReferenceError: MAX_BODY_BYTES is not defined
+  await assert.doesNotReject(async () => {
+    await route.handler(req, res)
+  })
+
+  // Очистка эффектов
+  for (const eff of effects) {
+    if (typeof eff.fn === 'function') {
+      try {
+        const cleanup = eff.fn()
+        if (typeof cleanup === 'function') cleanup()
+      } catch {}
+    }
+  }
+})
+
