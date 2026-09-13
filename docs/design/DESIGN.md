@@ -97,6 +97,13 @@
 - **Lightbox для изображений**: Превью Markdown-изображений в карточке открываются в модальном полноэкранном лайтбоксе.
 
 
+### 2026-09-13: Релиз v0.2.7 (Vector 5 Suite: Epic Triage, Atomic DoD, Quick Filters, Live Console & One-Click PR) (#248, #250, #252)
+- **Epic Triage & Decomposition**: Декомпозиция задач на подзадачи с конвертацией родителя в Epic, эндпоинты `POST /task/:id/triage`, `GET /task/:id/subtasks`, `POST /task/:id/subtask`, прогресс-индикаторы на карточках и агентский инструмент `board_decompose`.
+- **Atomic DoD Checklist**: Роут `POST /task/:id/checklist-toggle` и агентский инструмент `board_checklist_item` для атомарного переключения чек-листа без перезаписи всего списка.
+- **Quick Filter Bar**: Панель быстрых сегментированных фильтров (`All`, `Active`, `Review`, `Epics`, `Silent`) на тулбаре доски.
+- **Live Agent Console**: Моноширинный терминальный блок в выдвижной панели задачи для сессий in-progress.
+- **One-Click Gitea PR**: Создание Pull Request в Gitea одной кнопкой из панели ревью задачи (`POST /task/:id/pr`).
+
 ### 2026-09-08: Релиз Vector 3 (Просмотр Git Diff / Коммитов и Однокликовый Merge) (#211, #212)
 - **Git Diff & Commits Viewer**: В `TaskDrawer` интегрирован блок просмотра истории коммитов сессии и unified diff измененных файлов воркдерева (`GET /tasks/:id/diff` и `GET /tasks/:id/commits`). Diff безопасно ограничен 250 КБ.
 - **One-Click Merge (--no-ff)**: В секции Review Acceptance Gate добавлена кнопка «✓ Принять и смержить» (`POST /tasks/:id/merge`). Выполняется проверка на отсутствие незакоммиченных изменений (`checkWorktreeDirty`), слияние `git merge --no-ff` в целевую ветку (`main`), автоматическая дерегистрация и удаление воркдерева с переводом задачи в `done`.
