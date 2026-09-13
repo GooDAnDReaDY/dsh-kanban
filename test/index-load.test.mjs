@@ -42,6 +42,14 @@ export async function resolve(specifier, context, nextResolve) {
       shortCircuit: true,
     }
   }
+  if (specifier === '@deepseek-ai/dsh-tools') {
+    const code = 'export function defineTool(x) { return x }'
+    return {
+      url: 'data:text/javascript,' + encodeURIComponent(code),
+      format: 'module',
+      shortCircuit: true,
+    }
+  }
   return nextResolve(specifier, context)
 }
 `
@@ -185,4 +193,72 @@ test('lib/index.js обработчики с чтением тела (readBody) 
     }
   }
 })
+
+test('lib/index.js регистрирует board-инструменты через defineTool при boardToolEnabled: true (#252)', async () => {
+  const mod = await import('../lib/index.js')
+  const registeredTools = []
+  const effects = []
+
+  const mockCtx = {
+    inject(deps, fn) {
+      fn({
+        settings: {
+          register: () => ({ get: () => ({ boardToolEnabled: true }), watch: () => {} }),
+        },
+      })
+    },
+    effect(fn, desc) {
+      effects.push({ fn, desc })
+      return fn()
+    },
+    on() {},
+    get() { return null },
+    credentials: {
+      resolve: async () => ({ value: 'test' }),
+    },
+    webServer: {
+      use() {},
+      register() {},
+    },
+    tools: {
+      register(tool) {
+        registeredTools.push(tool)
+        return () => {}
+      },
+    },
+    agents: {
+      get() { return null },
+    },
+    logger: {
+      warn() {},
+      info() {},
+      error() {},
+    },
+  }
+
+  assert.doesNotThrow(() => {
+    mod.apply(mockCtx, { boardToolEnabled: true })
+  })
+
+  assert.equal(registeredTools.length, 8, 'Должно быть зарегистрировано ровно 8 инструментов доски')
+  const names = registeredTools.map((t) => t.name)
+  assert.ok(names.includes('board_move'))
+  assert.ok(names.includes('board_plan'))
+  assert.ok(names.includes('board_checklist'))
+  assert.ok(names.includes('board_report'))
+  assert.ok(names.includes('board_comments'))
+  assert.ok(names.includes('board_comment_add'))
+  assert.ok(names.includes('board_decompose'))
+  assert.ok(names.includes('board_checklist_item'))
+
+  for (const eff of effects) {
+    if (typeof eff.fn === 'function') {
+      try {
+        const cleanup = eff.fn()
+        if (typeof cleanup === 'function') cleanup()
+      } catch {}
+    }
+  }
+})
+
 
