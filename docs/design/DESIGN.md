@@ -66,6 +66,11 @@
   - Фильтрация structural noise в проверках dirtyFiles: в checkWorktreeDirty добавлен флаг --ignore-submodules=all, исключающий ложные блокировки удаления воркдеревьев из-за субмодулей и дрейфа gitlinks (#213).
   - Фильтрация сессий субагентов: сессии с маркером subagent (origin === 'subagent' или parentId !== undefined) исключаются из liveSessions и не перезаписывают состояние корневых задач (#215).
 ## Locked Decisions
+- **0.2.8 (Issue #254)**: Комплексное приведение к стандартам DSH-скиллов (`dsh-plugin-authoring`, `dsh-documentation-standard`, `quality-gate`):
+  - **Multi-Language Standard**: Устранен русский хардкод в ядре плагина (`DEFAULT_BOARDS`, `CONFIG_DEFAULTS`, `CONFIG_HINTS` в `lib/config.js` и сценарные инструкции агенту в `lib/commands.js` переведены на канонический English; перевод на русский осуществляется централизованно через `dsh-russian-lang`).
+  - **Изоляция стилей**: Зафиксирован атрибут `style.dataset.dshPlugin = 'dsh-kanban'` в `lib/client.js` для гарантированной защиты стилей доски от сброса при HMR/перезапуске соседних плагинов.
+  - **Автоматический AST Quality Gate**: Добавлен тест `test/ast-scope.test.mjs`, выполняющий синтаксическую валидацию всех 24 модулей в `lib/` и валидацию отсутствия необъявленных глобальных идентификаторов (`ReferenceError` immunity).
+  - **Устойчивость тестов на Windows**: Внедрено явное закрытие дескрипторов базы данных SQLite `store.close()` во всех тестовых cleanup-хуках перед вызовом `rmSync`, предотвращающее ошибки `EPERM`.
 - **0.2.6 (Issue #246)**: Исправлен критический сбой загрузки плагина в Cordis loader (`ReferenceError`): добавлен явный импорт `import z from '@deepseek-ai/schemastery'`, `openStore`, `CONFIG_DEFAULTS`, `CONFIG_HINTS`, `rootOf`, `join`, `homedir` в `lib/index.js`, а также добавлен автоматический тест валидации импорта и жизненного цикла `test/index-load.test.mjs`.
 - **0.2.5 (Issue #244)**: Комплексная оптимизация производительности и размера бандла:
   - Облегчение `lib/client.js` до ~214 КБ (безопасный запас относительно лимита DSH Store 256 КБ) через сжатие служебных комментариев и алиасинг вызовов React.

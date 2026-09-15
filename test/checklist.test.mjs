@@ -9,7 +9,7 @@ import { boardChecklistDefinition, boardMoveDefinition } from "../lib/board-tool
 function freshStore() {
   const dir = mkdtempSync(join(tmpdir(), "dkb-test-checklist-"));
   const store = openStore({ dir });
-  return { store, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
+  return { store, cleanup: () => { try { store.close() } catch {} rmSync(dir, { recursive: true, force: true }) } };
 }
 
 test("DoD checklist сохраняется и обновляется в карточке", () => {
