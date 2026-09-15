@@ -296,3 +296,17 @@ deregistration.
 ## 📄 License
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
+
+## Public composition service
+
+The server half exposes an optional dshKanban composition service. Its
+createTask({ title, body, board, column, labels, owner, repo, issueNumber,
+issueUrl, externalRef }) method validates the target board and column, stores
+the task through the existing SQLite-backed path, and returns { ok, task,
+taskId, alreadyExists }. A repeated externalRef returns the original card,
+including after a restart.
+
+This service only creates a card. It does not launch an agent, create a branch,
+create a worktree, or accept credentials from a consumer. The canonical
+consumer contract for task provisioning is
+dsh-drives.task-provision.v1.
