@@ -9,7 +9,7 @@ import { boardCommentsDefinition, boardCommentAddDefinition } from "../lib/board
 function freshStore() {
   const dir = mkdtempSync(join(tmpdir(), "dkb-test-comments-"));
   const store = openStore({ dir });
-  return { store, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
+  return { store, cleanup: () => { try { store.close() } catch {} rmSync(dir, { recursive: true, force: true }) } };
 }
 
 test("комментарии: добавление человеком и агентом, чтение треда (#208)", async () => {

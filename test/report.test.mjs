@@ -9,7 +9,7 @@ import { boardReportDefinition } from "../lib/board-tool.js";
 function freshStore() {
   const dir = mkdtempSync(join(tmpdir(), "dkb-test-report-"));
   const store = openStore({ dir });
-  return { store, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
+  return { store, cleanup: () => { try { store.close() } catch {} rmSync(dir, { recursive: true, force: true }) } };
 }
 
 test("board_report валидирует наличие summary и сохраняет отчет (#206)", async () => {

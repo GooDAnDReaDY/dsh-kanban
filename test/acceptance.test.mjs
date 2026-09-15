@@ -10,7 +10,7 @@ import { resolveModel } from "../lib/launcher.js";
 function freshStore() {
   const dir = mkdtempSync(join(tmpdir(), "dkb-test-accept-"));
   const store = openStore({ dir });
-  return { store, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
+  return { store, cleanup: () => { try { store.close() } catch {} rmSync(dir, { recursive: true, force: true }) } };
 }
 
 test("протокольный шлюз: board_move запрещает агенту перемещение в done (#209)", async () => {
