@@ -199,11 +199,50 @@ test('задача по сессии: отсутствие — штатный о
   cleanup()
 })
 
-test('правка с чужого сайта отклоняется', () => {
+test('правка с чужого сайта отклоняется (isTrustedRequest) (#261)', () => {
+  // Отсутствие заголовка sec-fetch-site отклоняется (#261)
+  assert.equal(isTrustedRequest({ headers: {} }), false)
+  assert.equal(isTrustedRequest(undefined), false)
   assert.equal(isTrustedRequest({ headers: { 'sec-fetch-site': 'cross-site' } }), false)
-  assert.equal(isTrustedRequest({ headers: { 'sec-fetch-site': 'same-origin' } }), true)
-  assert.equal(isTrustedRequest({ headers: {} }), true)
-  assert.equal(isTrustedRequest(undefined), true)
+  assert.equal(isTrustedRequest({ headers: { 'sec-fetch-site': 'other' } }), false)
+
+  // Чужой origin отклоняется
+  assert.equal(isTrustedRequest({
+    headers: {
+      'sec-fetch-site': 'same-origin',
+      origin: 'http://evil.com',
+      host: 'localhost:3000',
+    },
+  }), false)
+
+  // Чужой remoteAddress отклоняется
+  assert.equal(isTrustedRequest({
+    headers: {
+      'sec-fetch-site': 'same-origin',
+      origin: 'http://localhost:3000',
+      host: 'localhost:3000',
+    },
+    socket: { remoteAddress: '198.51.100.1' },
+  }), false)
+
+  // Легитимный same-origin с loopback разрешается
+  assert.equal(isTrustedRequest({
+    headers: {
+      'sec-fetch-site': 'same-origin',
+      origin: 'http://localhost:3000',
+      host: 'localhost:3000',
+    },
+    socket: { remoteAddress: '127.0.0.1' },
+  }), true)
+
+  // Легитимный same-site без явного socket разрешается
+  assert.equal(isTrustedRequest({
+    headers: {
+      'sec-fetch-site': 'same-site',
+      origin: 'http://localhost:3000',
+      host: 'localhost:3000',
+    },
+  }), true)
 })
 
 test('путь задачи разбирается вместе с действием', () => {
