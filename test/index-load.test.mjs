@@ -179,7 +179,12 @@ test('lib/index.js обработчики с чтением тела (readBody) 
     },
   })
   req.method = 'POST'
-  req.headers = { host: 'localhost' }
+  req.headers = {
+    host: 'localhost',
+    'sec-fetch-site': 'same-origin',
+    origin: 'http://localhost',
+  }
+  req.socket = { remoteAddress: '127.0.0.1' }
 
   let statusSent = null
   let bodySent = null
