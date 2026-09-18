@@ -3,7 +3,7 @@
 ## Product / Purpose
 - Назначение: Интегрированная доска задач для DeepSeek Harness с двусторонней сверкой с Gitea, автоматическим подхватом сессий агентов и управлением жизненным циклом.
 - Аудитория: Разработчики и операторы DeepSeek Harness, ведущие проектные задачи и сессии агентов.
-- Статус: Production, версия 0.1.23+.
+- Статус: Production, версия 0.2.8.
 
 ## User Surfaces
 - Web/UI: Экран доски в центральной колонке интерфейса DSH (mountBoard), выдвигающаяся панель задач, фильтры, группировки (по проектам, по исполнителю), метрики переходов.
@@ -140,3 +140,14 @@
   }
   ```
   Это гарантирует правильный порядок загрузки и доступность сервисов `locale` и `ui-settings` при инициализации бандла в web-профиле.
+
+
+### Release 0.2.8 Design Updates
+- **Public Task Provisioning Service (#255, #257)**:
+  Экспорт сервиса `dshKanban` с контрактом `dsh-drives.task-provision.v1`. Позволяет внешним потребителям (включая `dsh-drives`) создавать и связывать задачи доски по `externalRef`.
+- **UI Canonical Standards & Design System Tokens (#262, #263)**:
+  Использование канонического `IconChevronDownOutline14` из `@deepseek-ai/dsh-client-ui-primitives` с адаптивным 14x14 SVG-фоллбэком и 160ms CSS-анимацией раскрытия. Полный переход на `--dsw-alias-*` переменные темы вместо захардкоженных цветов.
+- **One-Click Updater & Remote Trust (#259)**:
+  Эндпоинт `/api/dsh-kanban/update` с валидацией заголовка `x-dsh-plugin-update`, проверкой loopback/LAN remote address и защитой от cross-origin/sec-fetch-site. В карточке настроек отображается актуальный статус и кнопка мгновенного обновления.
+- **Preflight & Code Hygiene Compliance (#268, #264)**:
+  Экспорт имени модуля приведен к каноническому `@goodandready/dsh-kanban`. Устранены избыточные внутренние экспорты и пустые catch-блоки.
