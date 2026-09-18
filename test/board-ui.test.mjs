@@ -407,3 +407,12 @@ test('русского словаря в плагине нет: он приез�
   const { src } = loadClient()
   assert.equal(src.includes('\n    const ru = {'), false)
 })
+
+test('client.js includes canonical IconChevronDownOutline14 with fallback SVG 14x14 and transition (#262)', () => {
+  const { src } = loadClient()
+  assert.ok(src.includes('IconChevronDownOutline14'), 'IconChevronDownOutline14 не запрашивается')
+  assert.ok(src.includes('FallbackChevron'), 'FallbackChevron отсутствует')
+  assert.ok(src.includes("viewBox: '0 0 14 14'"), 'Размер FallbackChevron должен быть 14x14')
+  assert.ok(src.includes('.dkb-chevron{'), 'Класс анимации шеврона отсутствует')
+  assert.ok(src.includes('transition:transform .16s'), 'Анимация шеврона должна быть .16s')
+})
