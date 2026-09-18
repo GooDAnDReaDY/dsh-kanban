@@ -90,7 +90,7 @@ test('остановка прерывает ход и не двигает кар
   const out = stopWork({ agents: { get: () => agent }, task: { id: 't', sessionId: 's1', column: 'in-progress' } })
   assert.equal(out.acted, 'stopped')
   assert.deepEqual(calls, [{ kind: 'user' }])
-  assert.match(STOP_DETAIL.stopped, /остановил/)
+  assert.match(STOP_DETAIL.stopped, /stopped/i)
 })
 
 test('останавливать нечего, если агент не идёт или его нет', () => {
