@@ -151,3 +151,10 @@
   Эндпоинт `/api/dsh-kanban/update` с валидацией заголовка `x-dsh-plugin-update`, проверкой loopback/LAN remote address и защитой от cross-origin/sec-fetch-site. В карточке настроек отображается актуальный статус и кнопка мгновенного обновления.
 - **Preflight & Code Hygiene Compliance (#268, #264)**:
   Экспорт имени модуля приведен к каноническому `@goodandready/dsh-kanban`. Устранены избыточные внутренние экспорты и пустые catch-блоки.
+
+### Release 0.2.9 Design Updates
+- **Canonical Language Compliance (#258)**:
+  Все строки времени выполнения в `lib/commands.js` (`logger.warn`, `STOP_DETAIL`, `MOVE_DETAIL`) приведены к каноническому английскому языку в соответствии со стандартом локализации DSH-плагинов. Русскоязычные переводы пользовательского интерфейса обслуживаются клиентскими словарями и пакетом `dsh-russian-lang`.
+- **DSH Store Package Size & Leak Protection CI (#264)**:
+  Добавлен автоматический CI-тест `test/pack-size.test.mjs`, контролирующий размер всех упаковываемых файлов при `npm pack`. Тест блокирует файлы размером более 256 KiB (жёсткий лимит DSH Store) и 250 KiB (практический порог безопасности), отслеживает `lib/client.js` (~235 KiB) и гарантирует отсутствие утечки служебных файлов (`AGENTS.md`, `index.md`, `.env`, `pnpm-lock.yaml`).
+
