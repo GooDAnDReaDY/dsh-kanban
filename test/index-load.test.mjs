@@ -1,9 +1,9 @@
-import test from 'node:test'
+import test, { after } from 'node:test'
 import assert from 'node:assert/strict'
 import { register } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import { tmpdir } from 'node:os'
-import { writeFileSync, unlinkSync } from 'node:fs'
+import { writeFileSync, unlinkSync, mkdtempSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 
 // Register mock loader for external @deepseek-ai/* peer dependencies
@@ -57,6 +57,16 @@ export async function resolve(specifier, context, nextResolve) {
 const loaderPath = join(tmpdir(), `test-loader-${Date.now()}.mjs`)
 writeFileSync(loaderPath, loaderCode, 'utf8')
 register(pathToFileURL(loaderPath))
+
+// Isolate storage directory in tmpdir so tests never touch production store (#267)
+const testStoreDir = mkdtempSync(join(tmpdir(), 'kanban-index-test-'))
+process.env.DSH_KANBAN_DIR = testStoreDir
+
+after(() => {
+  try { unlinkSync(loaderPath) } catch {}
+  try { rmSync(testStoreDir, { recursive: true, force: true }) } catch {}
+  delete process.env.DSH_KANBAN_DIR
+})
 
 test('lib/index.js успешно импортируется и оценивается без ReferenceError (#246)', async () => {
   const mod = await import('../lib/index.js')
