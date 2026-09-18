@@ -71,7 +71,7 @@ after(() => {
 test('lib/index.js успешно импортируется и оценивается без ReferenceError (#246)', async () => {
   const mod = await import('../lib/index.js')
   assert.equal(typeof mod.apply, 'function')
-  assert.equal(mod.name, 'dsh-kanban')
+  assert.equal(mod.name, '@goodandready/dsh-kanban')
   assert.equal(mod.SETTINGS_NAMESPACE, 'dsh-kanban')
   assert.ok(mod.Config, 'Config не экспортирован')
   assert.equal(typeof mod.storeDir, 'function')
