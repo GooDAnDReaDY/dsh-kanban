@@ -181,3 +181,14 @@ npm test
 ## 📄 开源许可证
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
+
+## 公共组合服务
+
+服务器端暴露可选的 dshKanban 组合服务。其
+createTask({ title, body, board, column, labels, owner, repo, issueNumber,
+issueUrl, externalRef }) 方法校验目标看板和列，通过现有的 SQLite 存储路径
+保存任务，并返回 { ok, task, taskId, alreadyExists }。重复的 externalRef
+会返回原有卡片，重启后仍然有效。
+
+该服务只创建卡片，不启动代理、不创建分支或 worktree，也不接受调用方传入的
+凭据。任务供应的规范消费者契约是 dsh-drives.task-provision.v1。
