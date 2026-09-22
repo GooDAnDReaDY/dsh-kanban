@@ -298,3 +298,48 @@ test('lib/index.js импортирует SessionId, randomUUID, createUserMessa
   assert.ok(/import\s+\{[^}]*SessionId[^}]*\}\s+from\s+'@deepseek-ai\/dsh-session'/.test(src), 'SessionId не импортирован из @deepseek-ai/dsh-session')
   assert.ok(/import\s+\{[^}]*createUserMessage[^}]*\}\s+from\s+'@deepseek-ai\/dsh-llm'/.test(src), 'createUserMessage не импортирован из @deepseek-ai/dsh-llm')
 })
+
+test('lib/index.js регистрирует очистку eventHub.closeAll на ctx.on dispose (#282)', async () => {
+  const mod = await import('../lib/index.js')
+  const registeredEvents = new Map()
+
+  const mockCtx = {
+    inject(deps, fn) {
+      fn({
+        settings: {
+          register: () => ({ get: () => ({}), watch: () => {} }),
+        },
+      })
+    },
+    effect(fn) {
+      return fn()
+    },
+    on(event, cb) {
+      registeredEvents.set(event, cb)
+    },
+    get() { return null },
+    credentials: {
+      resolve: async () => ({ value: 'test' }),
+    },
+    webServer: {
+      use() {},
+      register() {},
+    },
+    agents: {
+      get() { return null },
+    },
+    logger: {
+      warn() {},
+      info() {},
+      error() {},
+    },
+  }
+
+  mod.apply(mockCtx, {})
+
+  const disposeHandler = registeredEvents.get('dispose')
+  assert.equal(typeof disposeHandler, 'function', 'Должен быть зарегистрирован обработчик dispose')
+  assert.doesNotThrow(() => {
+    disposeHandler()
+  }, 'Обработчик dispose не должен выбрасывать исключений')
+})

@@ -53,3 +53,41 @@ test('KanbanEventHub broadcast отправляет сообщение всем 
   hub.closeAll()
   assert.equal(hub.getClientCount(), 0)
 })
+
+test('KanbanEventHub closeAll() останавливает heartbeat таймер и закрывает всех клиентов (#282)', () => {
+  const hub = new KanbanEventHub({ heartbeatIntervalMs: 1000 })
+  assert.ok(hub.heartbeatTimer !== null, 'heartbeatTimer должен быть запущен')
+
+  const written1 = []
+  let ended1 = false
+  const fakeRes1 = {
+    writeHead() {},
+    write(d) { written1.push(d) },
+    end() { ended1 = true },
+  }
+
+  const written2 = []
+  let ended2 = false
+  const fakeRes2 = {
+    writeHead() {},
+    write(d) { written2.push(d) },
+    end() { ended2 = true },
+  }
+
+  const fakeReq = { on() {} }
+  hub.handleSseRequest(fakeReq, fakeRes1)
+  hub.handleSseRequest(fakeReq, fakeRes2)
+  assert.equal(hub.getClientCount(), 2)
+
+  hub.closeAll()
+
+  assert.equal(hub.heartbeatTimer, null, 'heartbeatTimer должен быть сброшен в null')
+  assert.equal(hub.getClientCount(), 0, 'Список клиентов должен быть очищен')
+  assert.ok(ended1, 'Клиент 1 должен быть закрыт (end)')
+  assert.ok(ended2, 'Клиент 2 должен быть закрыт (end)')
+  assert.ok(written1.some((w) => w.includes('event: close')), 'Клиент 1 должен получить event: close')
+  assert.ok(written2.some((w) => w.includes('event: close')), 'Клиент 2 должен получить event: close')
+
+  // Повторный вызов closeAll() безопасен и идемпотентен
+  assert.doesNotThrow(() => hub.closeAll())
+})
