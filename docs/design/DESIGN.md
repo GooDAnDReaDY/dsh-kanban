@@ -158,6 +158,16 @@
 - **DSH Store Package Size & Leak Protection CI (#264)**:
   Добавлен автоматический CI-тест `test/pack-size.test.mjs`, контролирующий размер всех упаковываемых файлов при `npm pack`. Тест блокирует файлы размером более 256 KiB (жёсткий лимит DSH Store) и 250 KiB (практический порог безопасности), отслеживает `lib/client.js` (~235 KiB) и гарантирует отсутствие утечки служебных файлов (`AGENTS.md`, `index.md`, `.env`, `pnpm-lock.yaml`).
 
+### Release 0.2.14 Design Updates (#274, #279, #280, #281, #282, #283, #284)
+- **Plugin Manager Row Seat Integration (#274)**:
+  В соответствии с каноном `ROW-SEAT-RECIPE.md` слот `plugins.row.config` регистрируется первой выделенной веткой с ключом `@goodandready/dsh-kanban#dsh-kanban` (`rowConfigKey(bundle, rowId)`). Карточка настроек `KanbanSettingsCard` оптимизирована под контексты отображения: однострочный режим `view: 'summary'` под заголовком строки плагина и чистый bare-рендер `view: 'page'` без дублирующих рамок и шапок карточки. Слот `plugins.item` и устаревший `settings.plugin.item` сохранены в качестве обратной совместимости.
+- **Runtime Integrity & Safe Lifecycle (#279, #280, #281, #282)**:
+  Устранены критические `ReferenceError` при возобновлении сессий, диспетчеризации фоновой очереди и открытии панели diff/commits для задач с воркдеревьями. При выгрузке плагина `eventHub.closeAll()` гарантированно останавливает таймер heartbeat и закрывает клиентские SSE-соединения.
+- **Atomic Storage Batching & Database Query Performance (#283)**:
+  В `lib/store.js` внедрен механизм транзакций `store.withTransaction()` (`BEGIN IMMEDIATE` / `COMMIT` / `ROLLBACK`), кэширование подготовленного запроса `insertTask` и композитные индексы `tasks_updated` (`updatedAt`) и `tasks_archivable` (`archivedAt, col, columnAt`), ускоряющие фильтрацию и архивацию задач.
+- **Dead Code Elimination & Export Hygiene (#284)**:
+  Все ранее не задействованные экспорты подключены в рабочие маршруты плагина, снижая накладные расходы и гарантируя отсутствие мертвых веток.
+
 ### Message Format v4 Compatibility (#287)
 - **Producer-Owned Source Kinds**:
   В соответствии со спецификацией DSH session format v4, сообщения, отправляемые плагином в сессию через `agent.followup`, используют producer-owned source kind `source.kind: 'dsh-kanban'` вместо устаревшего родового `source.kind: 'plugin'`. Поле `source.plugin: 'dsh-kanban'` сохраняется для обратной совместимости, а назначение сообщения фиксируется в `source.form` (`task-start`, `task-resume`, `task-queued`, `batch-queued`, `board-command`). Валидация защищена набором тестов в `test/message-source-v4.test.mjs` и прямой проверкой через `assertV4RowAdmission`.

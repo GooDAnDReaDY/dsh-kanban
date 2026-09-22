@@ -2,6 +2,22 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.14
+
+### Added
+- **Plugin Manager Row Seat**: registered `plugins.row.config` slot keyed `@goodandready/dsh-kanban#dsh-kanban` separately as primary configuration seat for DSH `0.1.6-alpha.2`, keeping `plugins.item` and legacy `settings.plugin.item` as fallbacks (#274).
+- **View-Aware Settings Card**: `KanbanSettingsCard` renders view-aware surfaces: `view: 'summary'` produces a single-line subtitle, and `view: 'page'` renders a bare, uncollapsed form matching host page chrome (#274).
+
+### Fixed
+- **Worktree Drawer Variables**: declared missing `diff` and `commits` state variables in `BoardScreen`, fixing a ReferenceError crash in task modal for worktree-backed tasks (#281).
+- **Resume Task Route**: resolved undeclared `mintSessionId`, `createMessage`, `cwdOf`, and `gitRunner` identifiers in `POST /task/:id/resume` (#280).
+- **Queue Dispatch & Cron**: imported missing `SessionId`, `randomUUID`, and `createUserMessage` in `lib/index.js`, fixing background dispatch and scheduled cron executions (#279).
+- **Plugin Lifecycle Cleanup**: registered `ctx.on('dispose')` handler to clear `KanbanEventHub` heartbeat interval and safely close open SSE client connections upon plugin teardown (#282).
+- **Storage Transaction Batching & Indexes**: added `store.withTransaction` atomic batching for board imports, cached prepared `insertTask` statement, and added composite indexes `tasks_updated` and `tasks_archivable` (#283).
+
+### Refactored
+- **Dead Exports Cleanup**: connected uncalled internal exports to production execution paths across `lib/` modules (`columnsOfKind`, `looksLikeSecret`, `revivalKind`, `canRevive`, `getTemplateById`, `isSafeHref`, `relativeParts`, `prepareMultiRepoMirror`) (#284).
+
 ## 0.2.13
 
 ### Fixed
