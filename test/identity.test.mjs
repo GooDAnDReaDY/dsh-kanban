@@ -31,7 +31,7 @@ test('браузерная половина отдаёт apply, службы и 
   assert.equal(typeof exported.apply, 'function')
   // Array.from обязателен: массив рождён внутри vm-контекста, у него другой
   // прототип, и deepStrictEqual отверг бы совпадающее содержимое.
-  assert.deepEqual(Array.from(exported.inject), ['slots', 'locale', 'settingsScope'])
+  assert.deepEqual(Array.from(exported.inject), ['slots', 'locale', 'configForms'])
   assert.equal(typeof exported.helpers.neighboursFor, 'function')
 })
 
