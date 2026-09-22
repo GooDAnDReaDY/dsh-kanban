@@ -50,6 +50,22 @@ export async function resolve(specifier, context, nextResolve) {
       shortCircuit: true,
     }
   }
+  if (specifier === '@deepseek-ai/dsh-session') {
+    const code = 'export function SessionId(x) { return x }'
+    return {
+      url: 'data:text/javascript,' + encodeURIComponent(code),
+      format: 'module',
+      shortCircuit: true,
+    }
+  }
+  if (specifier === '@deepseek-ai/dsh-llm') {
+    const code = 'export function createUserMessage(x) { return x }'
+    return {
+      url: 'data:text/javascript,' + encodeURIComponent(code),
+      format: 'module',
+      shortCircuit: true,
+    }
+  }
   return nextResolve(specifier, context)
 }
 `
@@ -276,4 +292,9 @@ test('lib/index.js регистрирует board-инструменты чер�
   }
 })
 
-
+test('lib/index.js импортирует SessionId, randomUUID, createUserMessage для запуска задач и очереди (#279)', async () => {
+  const src = (await import('node:fs')).readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
+  assert.ok(/import\s+\{[^}]*randomUUID[^}]*\}\s+from\s+'node:crypto'/.test(src), 'randomUUID не импортирован из node:crypto')
+  assert.ok(/import\s+\{[^}]*SessionId[^}]*\}\s+from\s+'@deepseek-ai\/dsh-session'/.test(src), 'SessionId не импортирован из @deepseek-ai/dsh-session')
+  assert.ok(/import\s+\{[^}]*createUserMessage[^}]*\}\s+from\s+'@deepseek-ai\/dsh-llm'/.test(src), 'createUserMessage не импортирован из @deepseek-ai/dsh-llm')
+})
