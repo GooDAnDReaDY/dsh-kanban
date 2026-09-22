@@ -48,3 +48,31 @@ test('importBoard автоматически вызывает backupDatabase и 
     rmSync(dir, { recursive: true, force: true })
   }
 })
+test('store.withTransaction фиксирует изменения при успехе и откатывает при ошибке (#283)', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dsh-kanban-tx-test-'))
+  try {
+    const store = openStore({ dir })
+
+    // Успешная транзакция
+    const res = store.withTransaction(() => {
+      store.createTask({ id: 'tx-t1', title: 'Tx Task 1' })
+      store.createTask({ id: 'tx-t2', title: 'Tx Task 2' })
+      return 'done'
+    })
+    assert.equal(res, 'done')
+    assert.ok(store.getTask('tx-t1'))
+    assert.ok(store.getTask('tx-t2'))
+
+    // Транзакция с ошибкой откатывается целиком
+    assert.throws(() => {
+      store.withTransaction(() => {
+        store.createTask({ id: 'tx-t3', title: 'Tx Task 3' })
+        throw new Error('boom')
+      })
+    }, /boom/)
+
+    assert.equal(store.getTask('tx-t3'), undefined, 'Задача из упавшей транзакции не должна сохраниться')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
