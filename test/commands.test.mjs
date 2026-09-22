@@ -104,6 +104,8 @@ test('команда уходит в чат задачи массивом бло
   assert.ok(Array.isArray(sent[0].content))
   assert.equal(sent[0].content[0].type, 'text')
   assert.equal(sent[0].content[0].text, commandFor('review').instruction)
+  assert.equal(sent[0].source.kind, 'dsh-kanban')
+  assert.equal(sent[0].source.form, 'board-command')
 })
 
 test('перенос в done агенту ничего не поручает', () => {

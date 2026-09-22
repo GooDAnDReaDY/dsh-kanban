@@ -58,6 +58,7 @@ test('runTask с resume: true отправляет событие task-resume и
     assert.equal(out.sessionId, 'session-resume-1')
     assert.equal(sent.length, 1)
     assert.equal(sent[0].source.form, 'task-resume', 'сообщение должно иметь форму task-resume')
+    assert.equal(sent[0].source.kind, 'dsh-kanban')
     assert.ok(sent[0].content[0].text.includes('### ↻ Режим продолжения работы над задачей'))
 
     const transitions = store.listTransitions(createdTask.id)

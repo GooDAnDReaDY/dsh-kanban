@@ -190,6 +190,7 @@ test('startTask поднимает сессию и переносит задач
   assert.equal(sent[0].content[0].type, 'text')
   assert.ok(sent[0].content[0].text.includes('A'))
   assert.equal(sent[0].source.plugin, 'dsh-kanban')
+  assert.equal(sent[0].source.kind, 'dsh-kanban')
   const log = store.listTransitions(task.id)
   assert.equal(log[0].source, 'session')
   assert.ok(log[0].detail.includes('claude-opus-5'))
