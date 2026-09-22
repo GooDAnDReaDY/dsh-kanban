@@ -2,6 +2,11 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.13
+
+### Fixed
+- **Producer-Owned Source Kinds for DSH Format v4**: messages dispatched via `agent.followup` across all execution paths (`task-start`, `task-resume`, `task-queued`, `batch-queued`, `board-command`) now use producer-owned source kind `source.kind: 'dsh-kanban'` satisfying DSH session format v4 validation (`assertV4RowAdmission`) while maintaining backward compatibility with `source.plugin: 'dsh-kanban'` (#287).
+
 ## 0.2.12
 
 ### Fixed
