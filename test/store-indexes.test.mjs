@@ -14,4 +14,6 @@ test('новые композитные индексы создаются в б�
   assert.ok(names.includes('tasks_gitea_issue'), 'индекс tasks_gitea_issue отсутствует')
   assert.ok(names.includes('tasks_cron_next'), 'индекс tasks_cron_next отсутствует')
   assert.ok(names.includes('tasks_queued'), 'индекс tasks_queued отсутствует')
+  assert.ok(names.includes('tasks_updated'), 'индекс tasks_updated отсутствует (#283)')
+  assert.ok(names.includes('tasks_archivable'), 'индекс tasks_archivable отсутствует (#283)')
 })
