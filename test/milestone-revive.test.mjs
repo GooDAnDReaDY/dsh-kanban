@@ -3,7 +3,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import { issueMilestone, issueToTask, refreshPatch } from '../lib/import.js'
-import { canRevive } from '../lib/routes.js'
+import { canRevive, taskBySession } from '../lib/routes.js'
 import { revivalKind } from '../lib/launcher.js'
 import { applyObservation } from '../lib/sync.js'
 import { facetsOf, matchesFilters, MILESTONE, NO_MILESTONE } from '../lib/filters.js'
@@ -92,4 +92,20 @@ test('подписи выпуска и возобновления есть в о
   for (const key of ['card.revive', 'revive.same', 'revive.fresh']) {
     assert.equal(src.split("'" + key + "':").length - 1, 2, 'у ' + key + ' не два перевода')
   }
+})
+
+test('taskBySession включает признак canRevive (#284)', () => {
+  const { store, cleanup } = freshStore()
+  const t1 = store.createTask({ board: 'main', column: 'in-progress', title: 'Task 1' })
+  store.updateTask(t1.id, { sessionId: 'sess-dead' })
+  
+  // Агент не запущен (live = undefined) -> canRevive = true
+  const res1 = taskBySession({ store, sessionId: 'sess-dead', agents: { get: () => undefined } })
+  assert.equal(res1.canRevive, true)
+
+  // Агент в процессе выполнения (live = running agent) -> canRevive = false
+  const res2 = taskBySession({ store, sessionId: 'sess-dead', agents: { get: () => ({ status: 'running' }) } })
+  assert.equal(res2.canRevive, false)
+
+  cleanup()
 })
