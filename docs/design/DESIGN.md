@@ -158,3 +158,6 @@
 - **DSH Store Package Size & Leak Protection CI (#264)**:
   Добавлен автоматический CI-тест `test/pack-size.test.mjs`, контролирующий размер всех упаковываемых файлов при `npm pack`. Тест блокирует файлы размером более 256 KiB (жёсткий лимит DSH Store) и 250 KiB (практический порог безопасности), отслеживает `lib/client.js` (~235 KiB) и гарантирует отсутствие утечки служебных файлов (`AGENTS.md`, `index.md`, `.env`, `pnpm-lock.yaml`).
 
+### Message Format v4 Compatibility (#287)
+- **Producer-Owned Source Kinds**:
+  В соответствии со спецификацией DSH session format v4, сообщения, отправляемые плагином в сессию через `agent.followup`, используют producer-owned source kind `source.kind: 'dsh-kanban'` вместо устаревшего родового `source.kind: 'plugin'`. Поле `source.plugin: 'dsh-kanban'` сохраняется для обратной совместимости, а назначение сообщения фиксируется в `source.form` (`task-start`, `task-resume`, `task-queued`, `batch-queued`, `board-command`). Валидация защищена набором тестов в `test/message-source-v4.test.mjs` и прямой проверкой через `assertV4RowAdmission`.
