@@ -2,6 +2,11 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.12
+
+### Fixed
+- Settings no longer wait on the removed settingsScope service. The client uses configForms (#285).
+
 ## 0.2.11
 
 ### Fixed

@@ -74,7 +74,7 @@ test('POST /dsh-kanban/task/:id/resume forwards ctx.get("permissionPresets") to 
     get(name) {
       if (name === 'permissionPresets') return mockPresets;
       if (name === 'workspaceRegistry') return {};
-      if (name === 'settingsScope') return { bind: () => ({ getSnapshot: () => ({ available: true }) }) };
+      if (name === 'configForms') return { bind: () => ({ getSnapshot: () => ({ available: true }) }) };
       return null;
     },
     permissions: [{ id: 'wrong', name: 'Wrong' }],
