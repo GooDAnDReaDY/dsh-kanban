@@ -416,3 +416,14 @@ test('client.js includes canonical IconChevronDownOutline14 with fallback SVG 14
   assert.ok(src.includes('.dkb-chevron{'), 'Класс анимации шеврона отсутствует')
   assert.ok(src.includes('transition:transform .16s'), 'Анимация шеврона должна быть .16s')
 })
+
+test('BoardScreen объявляет состояния diffExpanded, diffLoading, diffData, commitsData, merging и функцию loadDiffAndCommits (#281)', () => {
+  const { src } = loadClient()
+  const screenStart = src.indexOf('function BoardScreen(')
+  assert.ok(screenStart > 0, 'BoardScreen не найден')
+  const screenSrc = src.slice(screenStart)
+  for (const name of ['diffExpanded', 'diffLoading', 'diffData', 'commitsData', 'merging']) {
+    assert.ok(screenSrc.includes(name), `переменная состояния ${name} не объявлена`)
+  }
+  assert.ok(screenSrc.includes('loadDiffAndCommits'), 'функция loadDiffAndCommits не объявлена')
+})
