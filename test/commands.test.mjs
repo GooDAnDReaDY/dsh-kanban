@@ -168,3 +168,9 @@ test('последствия перевода описаны на обоих я�
     assert.equal(matches, 2, `у move.${column} не два перевода, а ${matches}`)
   }
 })
+
+test('commandFor использует columnsOfKind и отклоняет несуществующие колонки (#284)', () => {
+  assert.equal(commandFor('non-existent', 'project'), undefined)
+  assert.equal(commandFor('deploy', 'simple'), undefined)
+  assert.ok(commandFor('deploy', 'project'))
+})

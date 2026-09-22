@@ -396,3 +396,10 @@ test('pull request-ы собираются со всех страниц', async 
   assert.equal(rows.length, 51)
   assert.equal(rows[50].number, 51)
 })
+
+test('isCredentialName отвергает значения, похожие на сырые секретные токены (#284)', () => {
+  assert.equal(isCredentialName('GITEA_TOKEN'), true)
+  assert.equal(isCredentialName('MY_SECRET_KEY_1'), true)
+  // Токен длиной 32+ символов отвергается
+  assert.equal(isCredentialName('0123456789abcdef0123456789abcdef0123'), false)
+})
