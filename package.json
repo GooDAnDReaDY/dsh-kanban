@@ -1,7 +1,7 @@
 {
   "name": "@goodandready/dsh-kanban",
-  "version": "0.2.14",
-  "description": "Visual Kanban board for DeepSeek Harness: Gitea-backed tasks, workflow columns, and a dedicated agent session per task.",
+  "version": "0.2.15",
+  "description": "Visual Kanban board for DeepSeek Harness: Gitea and GitHub-backed tasks, workflow columns, and a dedicated agent session per task.",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -27,6 +27,7 @@
     "dsh-plugin",
     "kanban",
     "gitea",
+    "github",
     "tasks",
     "agents",
     "deepseek-harness"

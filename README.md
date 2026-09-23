@@ -39,7 +39,7 @@
 
 Managing concurrent software tasks across multiple autonomous AI agents easily leads to context drift, lost pull request handoffs, and untracked branch lifecycles. Without a dedicated visual board, users must manually juggle disparate chat windows and verify issue states on remote VCS trackers.
 
-**`@goodandready/dsh-kanban`** introduces an interactive **Kanban Board** embedded natively into DeepSeek Harness. Every card represents a concrete development task linked to its own **dedicated agent session**. Moving a card between workflow columns automatically dispatches lifecycle instructions directly to the agent (e.g. implementing, opening PRs, deploying, or cleaning up worktrees), with continuous **2-way Gitea/Forgejo synchronization**.
+**`@goodandready/dsh-kanban`** introduces an interactive **Kanban Board** embedded natively into DeepSeek Harness. Every card represents a concrete development task linked to its own **dedicated agent session**. Moving a card between workflow columns automatically dispatches lifecycle instructions directly to the agent (e.g. implementing, opening PRs, deploying, or cleaning up worktrees), with continuous **2-way Gitea, Forgejo, and GitHub synchronization**.
 
 ---
 
@@ -64,7 +64,7 @@ graph LR
         Agent2["Agent: Task #53<br/>(PR Review)"]
     end
 
-    subgraph VCS ["Gitea / Forgejo Instance"]
+    subgraph VCS ["Git Forge (Gitea / GitHub)"]
         GiteaIssues["Issues & Milestones"]
         GiteaPRs["Pull Requests & Branches"]
         Webhook["Event Webhook (/dsh-kanban/webhook)"]
@@ -109,7 +109,7 @@ Unlike passive task boards, `dsh-kanban` actively drives the agents:
 
 ---
 
-### 3. Continuous 2-Way Gitea / Forgejo Sync
+### 3. Continuous 2-Way Gitea / Forgejo & GitHub Sync
 
 * **Bi-directional Reconciliation**: Polling and Webhook receiver (`/dsh-kanban/webhook`) sync issue descriptions, comments, PR status, labels, and closed states.
 * **Conflict Resolution**: Timestamp-based merge logic ensures manual edits in Gitea and board moves resolve cleanly without state clobbering.
@@ -207,6 +207,10 @@ dsh-kanban:
 | Key | Type | Default | Description |
 |:---|:---|:---|:---|
 | `boardKind` | `string` | `"project"` | Board workflow mode: `"project"` (6 columns) or `"simple"` (4 columns) |
+| `gitProvider` | `string` | `"auto"` | Active Git forge: `"auto"` (detect by credentials), `"gitea"`, or `"github"` |
+| `githubTokenRef` | `string` | `""` | DSH credential name containing GitHub PAT or App token |
+| `githubOwner` | `string` | `""` | Default GitHub organization or username |
+| `githubWebhookSecretRef` | `string` | `""` | DSH credential name containing GitHub webhook secret |
 | `giteaUrl` | `string` | `""` | Base URL of Gitea/Forgejo instance for task synchronization |
 | `giteaTokenEnv` | `string` | `"GITEA_TOKEN"` | DSH Credential name containing the Gitea API access token |
 | `giteaOwner` | `string` | `""` | Default organization or username for synced repositories |

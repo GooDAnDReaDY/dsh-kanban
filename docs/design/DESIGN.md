@@ -1,9 +1,9 @@
 # DESIGN.md — dsh-kanban
 
 ## Product / Purpose
-- Назначение: Интегрированная доска задач для DeepSeek Harness с двусторонней сверкой с Gitea, автоматическим подхватом сессий агентов и управлением жизненным циклом.
+- Назначение: Интегрированная доска задач для DeepSeek Harness с двусторонней сверкой с Gitea и GitHub, автоматическим подхватом сессий агентов и управлением жизненным циклом.
 - Аудитория: Разработчики и операторы DeepSeek Harness, ведущие проектные задачи и сессии агентов.
-- Статус: Production, версия 0.2.8.
+- Статус: Production, версия 0.2.15.
 
 ## User Surfaces
 - Web/UI: Экран доски в центральной колонке интерфейса DSH (mountBoard), выдвигающаяся панель задач, фильтры, группировки (по проектам, по исполнителю), метрики переходов.
@@ -171,3 +171,14 @@
 ### Message Format v4 Compatibility (#287)
 - **Producer-Owned Source Kinds**:
   В соответствии со спецификацией DSH session format v4, сообщения, отправляемые плагином в сессию через `agent.followup`, используют producer-owned source kind `source.kind: 'dsh-kanban'` вместо устаревшего родового `source.kind: 'plugin'`. Поле `source.plugin: 'dsh-kanban'` сохраняется для обратной совместимости, а назначение сообщения фиксируется в `source.form` (`task-start`, `task-resume`, `task-queued`, `batch-queued`, `board-command`). Валидация защищена набором тестов в `test/message-source-v4.test.mjs` и прямой проверкой через `assertV4RowAdmission`.
+
+### Release 0.2.15 Design Updates (#296)
+- **Full GitHub Integration & ETag Cache**:
+  Полноценный клиент GitHub REST API v3 (`lib/github.js`) с поддержкой ETag-кэширования (`If-None-Match` / HTTP 304) для сохранения часового лимита запросов.
+- **Composite Git Provider Routing**:
+  Единый абстрактный интерфейс (`lib/git-provider.js`), прозрачно распределяющий вызовы к Gitea или GitHub на основании атрибутов задачи (`task.provider`), URL issue или настройки `gitProvider` (`auto`, `gitea`, `github`).
+- **Unified Webhook Verification**:
+  Универсальная обработка входящих вебхуков (`lib/webhook.js`) с поддержкой HMAC-SHA256 для GitHub (`x-hub-signature-256`, `sha256=`) и Gitea, определение источника по заголовкам событий.
+- **Multi-Forge Settings & UI Badges**:
+  Секции настроек Git Forge и GitHub в `KanbanSettingsCard` со статусами готовности (`GitHub Configured`), поддержка учетных данных через `credential-ref` DSH.
+
