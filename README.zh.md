@@ -159,6 +159,10 @@ dsh-kanban:
 | 配置项 | 数据类型 | 默认值 | 功能说明 |
 |:---|:---|:---|:---|
 | `boardKind` | `string` | `"project"` | 看板模式：`"project"`（6 泳道）或 `"simple"`（4 泳道） |
+| `gitProvider` | `string` | `"auto"` | 活动 Git 平台：`"auto"`（按凭证自动检测）、`"gitea"` 或 `"github"` |
+| `githubTokenRef` | `string` | `""` | 包含 GitHub PAT 或应用令牌的 DSH 凭证名称 |
+| `githubOwner` | `string` | `""` | 默认监听的 GitHub 组织或用户名 |
+| `githubWebhookSecretRef` | `string` | `""` | 包含 GitHub Webhook 密钥的 DSH 凭证名称 |
 | `giteaUrl` | `string` | `""` | 用于同步任务的 Gitea / Forgejo 实例基础地址 |
 | `giteaTokenEnv` | `string` | `"GITEA_TOKEN"` | 存储 Gitea API Token 的 DSH 凭据键名 |
 | `giteaOwner` | `string` | `""` | 默认同步的仓库所属组织或用户名 |

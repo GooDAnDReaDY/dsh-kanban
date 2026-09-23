@@ -2,6 +2,15 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.15
+
+### Added
+- **Full GitHub Integration**: introduced complete GitHub REST API v3 client (`lib/github.js`) with conditional ETag caching (`If-None-Match` / HTTP 304) protecting GitHub's 5,000 req/hr rate limit (#296).
+- **Composite Git Provider**: added `lib/git-provider.js` router seamlessly delegating issue, PR, and repo operations between Gitea and GitHub based on task provider, issue URL, or `gitProvider` setting (`auto`, `gitea`, `github`) (#296).
+- **Dual Webhook Verification**: extended webhook listener (`lib/webhook.js`) to parse and verify GitHub HMAC-SHA256 signatures (`x-hub-signature-256`, `sha256=`) alongside Gitea hex payloads, routing inbound events automatically (#296).
+- **Forge Settings & Status Badges**: added `gitProvider`, `githubTokenRef`, `githubOwner`, and `githubWebhookSecretRef` to settings schema, UI card, and locale dictionaries (EN, ZH) with live status badges (`GitHub Configured` / `No Token`) (#296).
+- **Multi-Forge SQLite Storage**: added `provider` column and `github` task source support to SQLite store and import pipelines (#296).
+
 ## 0.2.14
 
 ### Added
