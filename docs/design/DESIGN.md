@@ -182,3 +182,11 @@
 - **Multi-Forge Settings & UI Badges**:
   Секции настроек Git Forge и GitHub в `KanbanSettingsCard` со статусами готовности (`GitHub Configured`), поддержка учетных данных через `credential-ref` DSH.
 
+
+### SQLite Storage & Backup Security Policy (#298)
+- **Filesystem Permissions**:
+  Каталог хранилища (`storeDir`) и подкаталог резервных копий (`backups`) создаются и поддерживаются с правами `0700` (`rwx------`). Все файлы базы данных (`kanban.db`, `kanban.db-wal`, `kanban.db-shm`) и файлы бэкапов создаются и поддерживаются с правами `0600` (`rw-------`).
+- **Automatic Legacy Repair**:
+  При инициализации хранилища (`openStore`) до начала обслуживания запросов и маршрутов утилита `secureStorePermissions(dir)` автоматически проверяет и исправляет права существующих файлов и каталогов, исключая утечку данных задач, сессий и промптов другим локальным пользователям ОС.
+- **Backup Isolation**:
+  При создании резервных копий в `backupDatabase()` каталог `backups` защищается правами `0700`, а созданный файл бэкапа — правами `0600`.
