@@ -2,6 +2,11 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.16
+
+### Fixed
+- **Database & Backup Filesystem Permissions**: enforced strict `0700` (`rwx------`) permissions on the task store directory and `backups/` directory, and `0600` (`rw-------`) on all SQLite database, WAL, SHM, and backup files (`lib/store.js`). Added automatic legacy installation repair during `openStore` before serving any HTTP routes, preventing local data exposure (#298).
+
 ## 0.2.15
 
 ### Added
