@@ -190,3 +190,14 @@
   При инициализации хранилища (`openStore`) до начала обслуживания запросов и маршрутов утилита `secureStorePermissions(dir)` автоматически проверяет и исправляет права существующих файлов и каталогов, исключая утечку данных задач, сессий и промптов другим локальным пользователям ОС.
 - **Backup Isolation**:
   При создании резервных копий в `backupDatabase()` каталог `backups` защищается правами `0700`, а созданный файл бэкапа — правами `0600`.
+
+### Workflow Engine Bridge (#300)
+- **Direct Core WorkflowEngine Integration**:
+  Плагин взаимодействует со встроенным сервисом ядра `ctx.workflowEngine` без промежуточных оркестраторов. Запуск сценария из карточки задачи формирует мультиагентный скрипт (`buildWorkflowScript`) с фазами `spec`, `backend`, `qa_tests`, `docs` в зависимости от колонки карточки и её меток.
+- **Graceful Preset Degradation**:
+  Роль сценария проверяется через `ctx.agentPresets.list()`. При отсутствии установленного пакета ролевых пресетов мост плавно деградирует на пресет по умолчанию.
+- **Card Lifecycle & Workflow Events Synchronization**:
+  События ядра `workflow/agent-start`, `workflow/agent-end` и `workflow/end` синхронизируются с состоянием карточки в SQLite (`workflowRunId`, `workflowStatus`: `running`, `completed`, `failed`, `cancelled`). При завершении воркфлоу карточка автоматически перемещается в следующую колонку (`review` / `done`), а итоговое резюме публикуется в комментарии связанного issue в Gitea/GitHub.
+- **Run Cancellation & UI Controls**:
+  Поддержана отмена выполняющегося воркфлоу (`POST /task/:id/workflow-cancel`) и статус-эндпоинт (`GET /task/:id/workflow-status`). В интерфейсе карточки (`lib/client.js`) выведены кнопки запуска `⚡ Workflow` и отмены `Cancel Workflow`, а также статус `⚡ Workflow` на доске.
+
