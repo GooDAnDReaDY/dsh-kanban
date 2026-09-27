@@ -2,6 +2,11 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.17
+
+### Added
+- **Core Workflow Engine Bridge (#300)**: integrated directly with core `ctx.workflowEngine` without intermediate orchestrators. Task launch generates a multi-agent workflow script (`buildWorkflowScript`) with role mapping (`spec`, `backend`, `qa_tests`, `docs`) based on card columns and labels, with graceful fallback to default preset if role packages are absent. Synchronizes core lifecycle events (`workflow/agent-start`, `workflow/agent-end`, `workflow/end`) with SQLite task state (`workflowRunId`, `workflowStatus`: `running`, `completed`, `failed`, `cancelled`), auto-advances the card to the target column on completion, and posts completion summaries to linked Gitea/GitHub issues and card comments. Adds workflow run cancellation (`POST /task/:id/workflow-cancel`), status endpoint (`GET /task/:id/workflow-status`), and interactive UI buttons (`⚡ Workflow`, `Cancel Workflow`) in TaskDrawer. Completely removes dependency on `@goodandready/dsh-agent-orchestrator`.
+
 ## 0.2.16
 
 ### Fixed
