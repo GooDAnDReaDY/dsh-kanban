@@ -343,3 +343,107 @@ test('lib/index.js регистрирует очистку eventHub.closeAll н�
     disposeHandler()
   }, 'Обработчик dispose не должен выбрасывать исключений')
 })
+
+test('POST /dsh-kanban/task/:id/workflow-start не падает с ReferenceError: gitRunner is not defined (#302)', async () => {
+  const { Readable } = await import('node:stream')
+  const mod = await import('../lib/index.js')
+  const registeredRoutes = new Map()
+
+  const mockCtx = {
+    inject(deps, fn) {
+      fn({
+        settings: {
+          register: () => ({ get: () => ({}), watch: () => {} }),
+        },
+      })
+    },
+    effect(fn) {
+      return fn()
+    },
+    on() {},
+    get(name) {
+      if (name === 'agentDefaultModel') return { currentSelection: () => ({ provider: 'test', model: 'test' }) }
+      if (name === 'workflowEngine') return { start: async () => ({ runId: 'run-1' }) }
+      return null
+    },
+    credentials: {
+      resolve: async () => ({ value: 'test' }),
+    },
+    webServer: {
+      use() {},
+      register(route) {
+        registeredRoutes.set(route.path, route)
+      },
+    },
+    agents: {
+      get() { return null },
+    },
+    logger: {
+      warn() {},
+      info() {},
+      error() {},
+    },
+  }
+
+  mod.apply(mockCtx, {})
+
+  const taskRoute = registeredRoutes.get('/dsh-kanban/task')
+  assert.ok(taskRoute, 'Маршрут /dsh-kanban/task должен быть зарегистрирован')
+
+  // Создаем карточку в хранилище через вызов POST /dsh-kanban/task
+  const createReq = new Readable({
+    read() {
+      this.push(Buffer.from(JSON.stringify({ title: 'Issue 302 Test', board: 'main' })))
+      this.push(null)
+    },
+  })
+  createReq.method = 'POST'
+  createReq.url = '/dsh-kanban/task'
+  createReq.headers = {
+    host: 'localhost',
+    'sec-fetch-site': 'same-origin',
+    origin: 'http://localhost',
+  }
+  createReq.socket = { remoteAddress: '127.0.0.1' }
+
+  let createdTaskId = null
+  const createRes = {
+    writeHead(code) {},
+    end(data) {
+      try {
+        const body = JSON.parse(data)
+        createdTaskId = body.task?.id
+      } catch {}
+    },
+  }
+  await taskRoute.handler(createReq, createRes)
+  assert.ok(createdTaskId, 'Задача должна быть создана')
+
+  // Вызываем POST /dsh-kanban/task/:id/workflow-start
+  const wfReq = new Readable({
+    read() {
+      this.push(Buffer.from(JSON.stringify({ workflow: true })))
+      this.push(null)
+    },
+  })
+  wfReq.method = 'POST'
+  wfReq.url = `/dsh-kanban/task/${createdTaskId}/workflow-start`
+  wfReq.headers = {
+    host: 'localhost',
+    'sec-fetch-site': 'same-origin',
+    origin: 'http://localhost',
+  }
+  wfReq.socket = { remoteAddress: '127.0.0.1' }
+
+  let wfStatus = null
+  let wfBody = null
+  const wfRes = {
+    writeHead(code) { wfStatus = code },
+    end(data) { wfBody = data },
+  }
+
+  // Не должно бросать ReferenceError: gitRunner is not defined
+  await assert.doesNotReject(async () => {
+    await taskRoute.handler(wfReq, wfRes)
+  })
+})
