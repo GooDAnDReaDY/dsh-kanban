@@ -2,6 +2,13 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.19
+
+### Fixed
+- **Webhook provider resolution (#303)**: connected `detectWebhookProvider` to route handler in `lib/index.js` and removed unused public export of `LABEL_ROLE_PATTERNS` in `lib/workflow-bridge.js`.
+- **Intake rejection slugs & template base (#304)**: converted hardcoded Russian rejection reasons in `lib/intake.js` to canonical English machine slugs (`missing-number`, `pull-request-ignored`, `issue-closed`, `already-exists`, `tombstone-ignored`) and converted default task templates in `lib/templates.js` to canonical English base.
+- **SQLite busy timeout & route method enforcement (#305)**: removed duplicate `PRAGMA busy_timeout` call in `lib/store.js` and enforced HTTP 405 Method Not Allowed checks on all read-only routes in `lib/index.js`.
+
 ## 0.2.18
 
 ### Fixed
