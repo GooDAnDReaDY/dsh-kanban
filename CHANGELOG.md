@@ -2,6 +2,11 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.18
+
+### Fixed
+- **Workflow start reference error (#302)**: fix undeclared identifier `gitRunner` in `POST /dsh-kanban/task/:id/workflow-start`. Export `defaultGitRunner` from `lib/worktree.js`, import and pass it explicitly in `lib/index.js`, and set `gitRunner = defaultGitRunner` default parameter in `WorkflowBridge.startTaskWorkflow`. Added integration test verifying error-free workflow startup.
+
 ## 0.2.17
 
 ### Added
