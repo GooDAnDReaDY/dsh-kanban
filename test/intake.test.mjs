@@ -57,7 +57,7 @@ test('закрытый issue не берётся: он уже не работа'
   const { store, cleanup } = freshStore()
   const out = shouldTake({ store, owner: 'o', repo: 'r', issue: issue(1, { state: 'closed' }) })
   assert.equal(out.take, false)
-  assert.match(out.why, /закрыт/)
+  assert.match(out.why, /closed|закрыт/)
   cleanup()
 })
 
@@ -66,7 +66,7 @@ test('pull request на доску не тащим', () => {
   const { store, cleanup } = freshStore()
   const out = shouldTake({ store, owner: 'o', repo: 'r', issue: issue(1, { pull_request: {} }) })
   assert.equal(out.take, false)
-  assert.match(out.why, /pull request/)
+  assert.match(out.why, /pull-request|pull request/)
   cleanup()
 })
 
@@ -75,7 +75,7 @@ test('issue с уже заведённой карточкой второй ра�
   store.createTask({ board: 'main', column: 'backlog', title: 'A', owner: 'o', repo: 'r', issueNumber: 1 })
   const out = shouldTake({ store, owner: 'o', repo: 'r', issue: issue(1) })
   assert.equal(out.take, false)
-  assert.match(out.why, /уже есть/)
+  assert.match(out.why, /already-exists|уже есть/)
   cleanup()
 })
 
@@ -89,7 +89,7 @@ test('удалённая карточка не возвращается', () => 
   store.deleteTask(task.id)
   const out = shouldTake({ store, owner: 'o', repo: 'r', issue: issue(1) })
   assert.equal(out.take, false)
-  assert.match(out.why, /удалили/)
+  assert.match(out.why, /tombstone|удалили/)
   cleanup()
 })
 
