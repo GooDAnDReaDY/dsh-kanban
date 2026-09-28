@@ -447,3 +447,77 @@ test('POST /dsh-kanban/task/:id/workflow-start не падает с ReferenceErr
     await taskRoute.handler(wfReq, wfRes)
   })
 })
+
+test('read-only маршруты (/sessions, /archive, /board, /whoami, /templates) возвращают HTTP 405 на не-GET запросы (#305)', async () => {
+  const { Readable } = await import('node:stream')
+  const mod = await import('../lib/index.js')
+  const registeredRoutes = new Map()
+
+  const mockCtx = {
+    inject(deps, fn) {
+      fn({
+        settings: {
+          register: () => ({ get: () => ({}), watch: () => {} }),
+        },
+      })
+    },
+    effect(fn) {
+      return fn()
+    },
+    on() {},
+    get() { return null },
+    credentials: {
+      resolve: async () => ({ value: 'test' }),
+    },
+    webServer: {
+      use() {},
+      register(route) {
+        registeredRoutes.set(route.path, route)
+      },
+    },
+    agents: {
+      get() { return null },
+    },
+    logger: {
+      warn() {},
+      info() {},
+      error() {},
+    },
+  }
+
+  mod.apply(mockCtx, {})
+
+  const readPaths = [
+    '/dsh-kanban/sessions',
+    '/dsh-kanban/archive',
+    '/dsh-kanban/board',
+    '/dsh-kanban/whoami',
+    '/dsh-kanban/templates',
+    '/dsh-kanban/metrics',
+    '/dsh-kanban/export.csv',
+  ]
+
+  for (const path of readPaths) {
+    const route = registeredRoutes.get(path)
+    assert.ok(route, `Маршрут ${path} должен быть зарегистрирован`)
+
+    const req = new Readable({
+      read() { this.push(null) },
+    })
+    req.method = 'POST'
+    req.url = path
+    req.headers = { host: 'localhost' }
+    req.socket = { remoteAddress: '127.0.0.1' }
+
+    let status = null
+    let responseBody = null
+    const res = {
+      writeHead(code, headers) { status = code },
+      end(data) { responseBody = data },
+    }
+
+    await route.handler(req, res)
+    assert.equal(status, 405, `Маршрут ${path} должен возвращать статус 405 на POST`)
+    assert.ok(responseBody && responseBody.includes('method-not-allowed'), `Маршрут ${path} должен возвращать ошибку method-not-allowed`)
+  }
+})
