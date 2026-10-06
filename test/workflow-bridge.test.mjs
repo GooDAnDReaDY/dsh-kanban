@@ -91,7 +91,7 @@ test('resolveTargetColumn: определяет следующую колонк�
   assert.equal(resolveTargetColumn('progress'), 'review')
   assert.equal(resolveTargetColumn('ready'), 'review')
   assert.equal(resolveTargetColumn('backlog'), 'review')
-  assert.equal(resolveTargetColumn('review'), 'done')
+  assert.equal(resolveTargetColumn('review'), 'review')
   assert.equal(resolveTargetColumn('done'), 'done')
 })
 

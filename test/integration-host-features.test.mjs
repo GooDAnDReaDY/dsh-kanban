@@ -59,6 +59,7 @@ test('Permission Confirmation Gate блокирует запуск до подт
     provider: 'test-prov', model: 'test-mod',
     mintSessionId: () => 'sess-1',
     createMessage: (m) => m,
+    permissions: { set() {} },
   })
   assert.ok(res.sessionId)
 
