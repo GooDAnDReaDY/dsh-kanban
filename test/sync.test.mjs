@@ -39,9 +39,9 @@ test('наблюдение находит влитый PR задачи', () => {
 })
 
 test('пояснение к переходу читается человеком', () => {
-  assert.equal(explain({ column: 'deploy', pull: { number: 9 } }), 'PR #9 влит')
-  assert.equal(explain({ column: 'cleanup', branch: 'feat/7-x' }), 'issue закрыт, ветка feat/7-x ещё есть')
-  assert.equal(explain({ column: 'done' }), 'issue закрыт, ветка удалена')
+  assert.equal(explain({ column: 'deploy', pull: { number: 9 } }), 'PR #9 merged')
+  assert.equal(explain({ column: 'cleanup', branch: 'feat/7-x' }), 'issue closed, branch feat/7-x still exists')
+  assert.equal(explain({ column: 'done' }), 'issue closed, branch deleted')
   assert.equal(explain({ column: 'backlog' }), '')
 })
 

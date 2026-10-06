@@ -64,12 +64,12 @@ test('каждое сообщение пачки называет свой но�
   // Без этого агент, получив первую из пяти, объявит работу законченной и
   // приберёт за собой: удалит ветку, закроет issue.
   const task = { repo: 'r', issueNumber: 7, title: 'A', body: '' }
-  assert.match(buildQueuedMessage(task, config, 2, 5), /Задача 2 из 5/)
+  assert.match(buildQueuedMessage(task, config, 2, 5), /Task 2 of 5/)
 })
 
 test('одна задача номера не получает', () => {
   const task = { repo: 'r', issueNumber: 7, title: 'A', body: '' }
-  assert.doesNotMatch(buildQueuedMessage(task, config, 1, 1), /из 1/)
+  assert.doesNotMatch(buildQueuedMessage(task, config, 1, 1), /of 1/)
 })
 
 test('в работу уезжает только первая, остальные ждут очереди', async () => {
@@ -160,7 +160,7 @@ test('снятие с очереди отвязывает задачу и гов
   const out = unqueueTask({ store, task: store.getTask(task.id) })
   assert.equal(out.task.queuedAt, 0)
   assert.equal(out.task.sessionId, null)
-  assert.match(store.listTransitions(task.id)[0].detail, /отозвать его нечем/)
+  assert.match(store.listTransitions(task.id)[0].detail, /message already sent to agent/)
   cleanup()
 })
 

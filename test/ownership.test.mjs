@@ -42,7 +42,7 @@ test('запуск берёт свободную задачу на себя', ()
   const task = store.createTask({ board: 'main', column: 'backlog', title: 'A' })
   assert.equal(claimOnStart({ store, task, login: 'vadim' }), 'vadim')
   assert.equal(store.getTask(task.id).assignee, 'vadim')
-  assert.match(store.listTransitions(task.id)[0].detail, /взял при запуске/)
+  assert.match(store.listTransitions(task.id)[0].detail, /claimed on launch/)
   cleanup()
 })
 

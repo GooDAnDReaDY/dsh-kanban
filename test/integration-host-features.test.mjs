@@ -102,7 +102,7 @@ test('PROGRESSDUMP передаёт вводный бриф и подхваты�
 
   // Проверяем, что в первое сообщение попал заголовок эстафеты
   const msgText = sent[0].content[0].text
-  assert.ok(msgText.includes('## 📋 Эстафета задачи (PROGRESSDUMP)'))
+  assert.ok(msgText.includes('## 📋 Task Handover (PROGRESSDUMP)'))
   assert.ok(msgText.includes('Рефакторинг store.js'))
   assert.ok(msgText.includes('Продолжай работу.'))
 

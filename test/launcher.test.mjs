@@ -92,7 +92,7 @@ test('постоянная приписка добавляется к обоим
 
 test('пустая приписка ничего не дописывает', () => {
   const text = buildStartMessage({ title: 'привет' }, withDefaults({ replyInstruction: '   ' }))
-  assert.ok(text.startsWith('Задача: привет'))
+  assert.ok(text.startsWith('Task: привет'))
   assert.ok(!text.includes('Отвечай'))
 })
 
@@ -100,7 +100,7 @@ test('своей задаче воркфлоу предлагается по у�
   // Задача может быть любой — «найди мне информацию» в том числе. Решает агент
   // по содержанию, а не доска заранее.
   const text = buildStartMessage({ title: 'найди мне информацию про X' }, withDefaults({}))
-  assert.ok(text.includes('Если задача окажется про код проекта'))
+  assert.ok(text.includes('If the task is about project code'))
   assert.ok(!text.includes('preflight'))
 })
 
@@ -320,7 +320,7 @@ test('удалённая сессия заменяется новой, и об �
   assert.equal(out.mode, 'created')
   const log = store.listTransitions(task.id)
   assert.equal(log.length, 1)
-  assert.ok(log[0].detail.includes('не возобновилась'))
+  assert.ok(log[0].detail.includes('previous session not resumed'))
   cleanup()
 })
 
@@ -375,7 +375,7 @@ test('пустой текст человека возвращает встрое
     agents, store, task, config, provider: 'p', model: 'm',
     mintSessionId, createMessage, text: '   ',
   })
-  assert.ok(sent[0].content[0].text.includes('Задача'))
+  assert.ok(sent[0].content[0].text.includes('Task'))
   cleanup()
 })
 

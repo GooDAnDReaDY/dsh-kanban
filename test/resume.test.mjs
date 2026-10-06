@@ -12,10 +12,10 @@ test('messageFor генерирует преамбулу продолжения 
     branch: 'task/1-resume',
   }
   const msg = messageFor(task, {}, '', { resume: true })
-  assert.ok(msg.includes('### ↻ Режим продолжения работы над задачей'), 'должен содержать заголовок продолжения')
+  assert.ok(msg.includes('### ↻ Resumed task execution'), 'должен содержать заголовок продолжения')
   assert.ok(msg.includes('/tmp/worktree/task-1'), 'должен указывать путь к воркдереву')
   assert.ok(msg.includes('task/1-resume'), 'должен указывать имя ветки')
-  assert.ok(msg.includes('Сохраняй существующие изменения'), 'должен инструктировать сохранять изменения')
+  assert.ok(msg.includes('Preserve existing changes'), 'должен инструктировать сохранять изменения')
 })
 
 test('runTask с resume: true отправляет событие task-resume и фиксирует переход (#226)', async () => {
@@ -59,10 +59,10 @@ test('runTask с resume: true отправляет событие task-resume и
     assert.equal(sent.length, 1)
     assert.equal(sent[0].source.form, 'task-resume', 'сообщение должно иметь форму task-resume')
     assert.equal(sent[0].source.kind, 'dsh-kanban')
-    assert.ok(sent[0].content[0].text.includes('### ↻ Режим продолжения работы над задачей'))
+    assert.ok(sent[0].content[0].text.includes('### ↻ Resumed task execution'))
 
     const transitions = store.listTransitions(createdTask.id)
-    const resumeTransition = transitions.find((t) => t.detail?.includes('продолжение работы над задачей'))
+    const resumeTransition = transitions.find((t) => t.detail?.includes('continuing task execution'))
     assert.ok(resumeTransition, 'в журнале задачи должен появиться переход продолжения работы')
   } finally {
     cleanup()

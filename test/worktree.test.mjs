@@ -290,7 +290,7 @@ test('cleanupTaskWorktree проводит полный цикл безопас�
   assert.equal(after.workspaceId, '')
 
   const transitions = store.listTransitions(task.id)
-  assert.ok(transitions.some((t) => t.detail.includes('очистка: воркдерево удалено')))
+  assert.ok(transitions.some((t) => t.detail.includes('cleanup: worktree removed')))
 
   cleanup()
 })

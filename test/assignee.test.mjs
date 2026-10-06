@@ -61,12 +61,12 @@ test('назначение пишется в журнал задачи', () => {
   const { store, cleanup } = freshStore()
   const task = store.createTask({ board: 'main', column: 'backlog', title: 'A' })
   assert.equal(assignTask({ store, id: task.id, login: 'vadim' }).task.assignee, 'vadim')
-  assert.match(store.listTransitions(task.id)[0].detail, /ответственный: vadim/)
+  assert.match(store.listTransitions(task.id)[0].detail, /assigned: vadim/)
 
   assignTask({ store, id: task.id, login: '' })
   assert.equal(store.getTask(task.id).assignee, '')
   const said = store.listTransitions(task.id).map((row) => row.detail)
-  assert.ok(said.some((one) => /снят/.test(one)), 'о снятии не написали: ' + said.join(' | '))
+  assert.ok(said.some((one) => /unassigned/.test(one)), 'о снятии не написали: ' + said.join(' | '))
   cleanup()
 })
 

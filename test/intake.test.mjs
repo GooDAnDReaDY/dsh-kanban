@@ -209,7 +209,7 @@ test('без владельца подхват отказывает словам
   const { store, cleanup } = freshStore()
   const out = await intakeAll({ gitea: {}, store, config, owner: undefined })
   assert.equal(out.failed, 1)
-  assert.match(out.problem.message, /владелец/)
+  assert.match(out.problem.message, /owner/)
   cleanup()
 })
 
