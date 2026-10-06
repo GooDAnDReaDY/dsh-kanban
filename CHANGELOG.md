@@ -2,6 +2,46 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.22
+
+### Fixed
+- **Git Runner Process Exit Contract (#327)**:
+  - Standardized runner status evaluation in `lib/worktree.js` (`diff`, `commits`, `merge`) to support both `result.exitCode` and `result.code` uniformly.
+- **Workflow & Batch Permission Negotiation Gate (#328)**:
+  - Enforced permission tier verification (`permissionConfirmedTier`) in `lib/launcher.js`, `lib/routes.js`, and `lib/workflow-bridge.js`. Prevents elevation attacks when a task's permission is re-requested at a higher tier than confirmed by the user.
+- **Opened & Resumed Session Effective Permission Enforcement (#329)**:
+  - Unified `applyPermission` invocation across newly created, opened, and resumed sessions in `lib/launcher.js`. Ensured chosen or stored `task.permission` is consistently applied to the agent session; rejects task execution fail-closed (`permission-unavailable`) if permissions setter is missing or fails.
+- **Global Cross-Board Session Concurrency Limit (#330)**:
+  - Extended live session counting across all boards via `store.listBoards()` in `lib/launcher.js` and `lib/workflow-bridge.js`, backed by atomic reservation tracking (`reserveSessionSlot`, `releaseSessionSlot`) to eliminate race conditions during concurrent task spawning.
+- **Delayed & Queued Launch Parameter Preservation (#331)**:
+  - Ensured queued/cron task dispatches in `lib/launcher.js` preserve all card parameters: `provider`, `model`, `permission`, `reasoningEffort`, `agentPreset`, and initial handover text.
+- **Dual-Forge Routing for GitHub & Gitea (#332)**:
+  - Added native `forge` attribution (`github` vs `gitea`) across `lib/store.js`, `lib/routes.js`, `lib/import.js`, `lib/sync.js`, and `lib/outbound.js`. Synchronizations and outbound dispatches group and route tasks to the corresponding forge client.
+- **Full JSON Snapshot Import/Export Data Integrity (#333)**:
+  - Extended JSON export and import in `lib/store.js` and `lib/routes.js` to serialize and restore all 16 canonical task fields, archived tasks (`restoreTask`), and full transition history (`restoreTransition`).
+- **Human DoD Acceptance Workflow Completion Boundary (#334)**:
+  - Restricted automated workflow completion advancement in `lib/workflow-bridge.js` to `review` column (`in-progress` and `review` map to `review`). The `done` column remains strictly reserved for human DoD acceptance and review sign-off.
+- **Reasoning Effort Parameter Persistence & Propagation (#335)**:
+  - Preserved `reasoningEffort` across card update routes (`updateTask`) and passed it to agent lifecycle calls (`agents.create` and `agents.resume`) in `lib/launcher.js`.
+- **Composite Git Provider Repository Creation (#336)**:
+  - Exported `createRepo` from composite `lib/git-provider.js` and implemented `createRepo` in `lib/github.js` for parity with Gitea.
+- **Multiline Progress Dump Block Roundtrip (#338)**:
+  - Enhanced `lib/progress-dump.js` to cleanly capture multiline `Next steps:` blocks and verified `parse(format(dump))` bidirectional roundtrip fidelity.
+- **Checklist Toggle API Canonical Completed State (#339)**:
+  - Added canonical `completed: Boolean` alongside backward-compatible `done` in `toggleChecklistItem` in `lib/routes.js`.
+- **CSV Formula Injection Mitigation (#340)**:
+  - Sanitized untrusted cell strings starting with formula trigger prefixes (`=`, `+`, `-`, `@`, `\t`, `\r`) in `exportTasksCsv` in `lib/routes.js` per OWASP guidelines.
+- **Fail-Closed Git Cleanup & Safe Removal (#341)**:
+  - In `lib/worktree.js`, failed closed when git dirty status check cannot be determined, blocking deletion on runner errors and removing unsafe forced deletion fallbacks.
+- **Worktree Isolation Precondition Enforcement (#342)**:
+  - Enforced worktree isolation in `lib/launcher.js`: when worktree creation fails for a git repository, execution halts immediately with error rather than unsafely falling back to the project root.
+- **Broadcasting SSE State Changes on HTTP Mutations (#343)**:
+  - Wired `eventHub` into `lib/index.js` and `lib/board-tool.js` to broadcast `task:change` SSE events on all card mutations (`createTask`, `updateTask`, `deleteTask`, `setArchived`, `importBoard`, `syncAll`, and AI board tools).
+- **Documentation & Agent Specification Alignment (#344)**:
+  - Added canonical `AGENTS.md` and `docs/index.md`, repaired relative markdown links in `docs/design/DESIGN.md`, and aligned column definitions across documentation.
+- **CC0 Fractional Indexing Replacement & Migration (#345)**:
+  - Replaced linear string inflation in `lib/order.js` with CC0-1.0 `fractional-indexing` (`lib/fractional-indexing.js`), maintaining bounded key lengths (4 bytes after 10,000 appends). Added atomic SQLite startup migration `fractional_indexing_migrated`.
+
 ## 0.2.21
 
 ### Fixed

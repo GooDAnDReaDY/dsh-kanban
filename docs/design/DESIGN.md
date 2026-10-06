@@ -3,7 +3,7 @@
 ## Product / Purpose
 - Назначение: Интегрированная доска задач для DeepSeek Harness с двусторонней сверкой с Gitea и GitHub, автоматическим подхватом сессий агентов и управлением жизненным циклом.
 - Аудитория: Разработчики и операторы DeepSeek Harness, ведущие проектные задачи и сессии агентов.
-- Статус: Production, версия 0.2.19.
+- Статус: Production, версия 0.2.22.
 
 ## User Surfaces
 - Web/UI: Экран доски в центральной колонке интерфейса DSH (mountBoard), выдвигающаяся панель задач, фильтры, группировки (по проектам, по исполнителю), метрики переходов.
@@ -13,7 +13,7 @@
   - Пункт бокового меню для вызова экрана доски.
 - API: HTTP эндпоинты /dsh-kanban/* (board, snapshot, task, sync, webhook, metrics, whoami, checklist, report, comments, accept, reject).
 - CLI: node tools/compat.mjs (проверка совместимости экспортов ядра).
-- Документация: README.md, docs/README.ru.md, docs/README.zh.md, index.md.
+- Документация: [README.md](../../README.md), [README.ru.md](../../README.ru.md), [README.zh.md](../../README.zh.md), [docs/index.md](../index.md).
 
 ## Visual Direction
 - Атмосфера: Строгий утилитарный инструментальный интерфейс в едином стиле темы DeepSeek Harness.
@@ -23,7 +23,7 @@
 ## Foundations
 - Цвета и роли: Использование CSS-переменных DSH темы (--dsw-alias-bg-layer-3, --dsw-alias-border-l2, --dsw-alias-label-primary, --dsw-alias-label-secondary).
 - Типографика: Системный стек шрифтов DSH (inherit, 13-14px базовый размер, 11-12px для бейджей и служебных меток).
-- Сетка, отступы, responsive: 5 стандартных колонок (backlog, ready, progress, review, done) с горизонтальным скроллом и адаптивными карточками.
+- Сетка, отступы, responsive: 6 канонических колонок (backlog, in-progress, review, deploy, cleanup, done) с горизонтальным скроллом и адаптивными карточками. Колонка done является строгим человеческим шлюзом приёмки (Human-only DoD acceptance gate); автоматические процессы и агенты переводят задачи только в review.
 - Accessibility: Нативные кнопки button, role="status" для сообщений, семантичные поля ввода с aria-label/label.
 
 ## Components And States
