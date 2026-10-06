@@ -2,6 +2,41 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.21
+
+### Fixed
+- **Settings Service Compatibility & Schema Protection (#310, #311, #313, #346)**:
+  - Eliminated `sctx.settings.register` calls (method does not exist in DSH 0.2.0-rc.x), avoiding runtime exceptions during plugin startup.
+  - Migrated configuration updates to standard schema description and watcher lifecycle.
+  - Decorated sensitive and transient config schema fields with `.volatile()`.
+- **Workflow Script Code Injection Prevention (#314)**:
+  - Replaced raw template literal interpolation in `buildWorkflowScript` with safe `JSON.stringify` serialization for dynamic parameters (`issueNumber`, task ids, roles, and titles).
+- **Worktree Ownership & Path Traversal Fencing (#315)**:
+  - Enforced `isPathFenced` boundary validation across `cleanupTaskWorktree` and `removeTaskWorktree`, blocking execution against foreign or out-of-bounds directories.
+- **SSE Origin Verification & Strict Headers (#316)**:
+  - Restricted SSE event stream in `lib/events.js` using `isTrustedRequest` and removed wildcard `*` CORS header.
+- **Fail-Closed Permission Gate & Config Hint Alignment (#317)**:
+  - Defaulted unknown permission tiers to `Infinity` (fail closed) in permission ranking checks.
+  - Corrected `sessionDefaultPermission` configuration description hint to `(read-only, workspace-write, danger-full-access)`.
+- **Board Move Column Validation (#318)**:
+  - Enforced column existence verification against board columns (`columnsOf`) in `applyMove`, rejecting invalid column targets with HTTP 400 `invalid-column`.
+- **Credential Reference Recognition (#319)**:
+  - Updated secret detection in `lib/gitea.js` (`looksLikeSecret` / `isCredentialName`) to support valid uppercase credential reference identifiers >= 32 characters without misclassifying them as raw secrets.
+- **Workflow Completion Comment Preservation (#320)**:
+  - Fixed workflow completion handler in `lib/workflow-bridge.js` to call `this.store.addComment`, and added `store.addTaskComment` compatibility alias in `lib/store.js`.
+- **Git Branch Argument Injection Prevention (#321)**:
+  - Validated target checkout branch with `isSafeBranchName` and enforced disambiguated `git checkout -- <target>` in `mergeTaskWorktree`.
+- **Regex Metacharacter Escaping (#322)**:
+  - Escaped regex metacharacters in `branchOfTask` and `pullsOfTask` issue matching, and strictly required positive safe integers.
+- **Sequential Outbox Delivery (#323)**:
+  - Replaced unawaited `forEach` in `runBatch` with sequential `for (const item of batch) await send(item)` to ensure reliable message delivery order.
+- **Dynamic Outbox Store Binding (#324)**:
+  - Supported dynamic store accessor function in `createOutbox` to prevent capturing stale `undefined` during initialization.
+- **User Identity Claim Security (#325)**:
+  - Removed client header spoofing via `x-dsh-user` in `claimAs`, resolving user identity exclusively through authenticated `await whoAmI()`.
+- **GitHub Issue Index Validation (#326)**:
+  - Enforced strict positive safe integer validation (`safeIssueIndex`) and URI encoding for GitHub issue indices.
+
 ## 0.2.20
 
 ### Fixed
