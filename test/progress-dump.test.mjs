@@ -55,7 +55,7 @@ test('formatProgressDump и formatHandoverPreamble форматируют тек
   assert.ok(block.endsWith('>>>PROGRESSDUMP'))
 
   const preamble = formatHandoverPreamble(dump)
-  assert.ok(preamble.includes('## 📋 Эстафета задачи (PROGRESSDUMP)'))
+  assert.ok(preamble.includes('## 📋 Task Handover (PROGRESSDUMP)'))
   assert.ok(preamble.includes('Моя цель'))
   assert.ok(preamble.includes('Мой прогресс'))
   assert.ok(preamble.includes('Мои шаги'))

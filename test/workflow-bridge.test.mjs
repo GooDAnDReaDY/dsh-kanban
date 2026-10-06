@@ -70,7 +70,7 @@ test('buildWorkflowScript: формирует корректный JS-сцена
   const script = buildWorkflowScript({ task, role: 'backend' })
 
   assert.ok(script.includes('phase("backend");'))
-  assert.ok(script.includes('log("Запуск этапа backend по карточке #42");'))
+  assert.ok(script.includes('log("Starting phase backend for card #42");'))
   assert.ok(script.includes('const result = await agent(prompt, { label: "backend", phase: "backend" });'))
   assert.ok(script.includes('return {'))
   assert.ok(script.includes('role: "backend"'))

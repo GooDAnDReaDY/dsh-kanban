@@ -2,6 +2,16 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.20
+
+### Fixed
+- **Complete Localization & Code Comments English Standardization (#258, #347, #350)**:
+  - Eliminated all hardcoded Russian text from runtime server code across `lib/*.js`: API error messages, log warnings, transition history details, CSV export headers, and prompts are now standardized in natural English.
+  - Replaced all 1552 lines of Russian code comments across all modules in `lib/` with concise, natural technical English. Verified zero Cyrillic lines across all `lib/*.js` files (`grep -cP '[\u0400-\u04FF]' lib/*.js == 0`).
+  - Standardized transition history details in English: assignee assignment/unassignment, conflict resolution messages, PR creation/merge, and session queue events.
+  - Exported CSV headers updated to standard English (`ID`, `Title`, `Column`, `Priority`, `Repository`, `Issue #`, `Assignee`, `Model`, `Provider`, `Reasoning Effort`, `Workspace`, `Branch`, `Created`, `Updated`).
+  - Unit test suite passes 100% (737/737 tests passing).
+
 ## 0.2.19
 
 ### Fixed
