@@ -19,6 +19,7 @@ test('updater: isTrustedUpdateRequest validates headers and remote address', () 
     socket: { remoteAddress: '127.0.0.1' },
     headers: {
       'x-dsh-plugin-update': '1',
+      'sec-fetch-site': 'same-origin',
       host: '127.0.0.1:3000',
       origin: 'http://127.0.0.1:3000',
     },
@@ -29,11 +30,47 @@ test('updater: isTrustedUpdateRequest validates headers and remote address', () 
     socket: { remoteAddress: '10.0.0.100' },
     headers: {
       'x-dsh-plugin-update': '1',
+      'sec-fetch-site': 'same-origin',
       host: '10.0.0.100:3000',
       origin: 'http://10.0.0.100:3000',
     },
   }
   assert.equal(isTrustedUpdateRequest(validLan), true)
+
+  // Missing sec-fetch-site rejected (#349)
+  assert.equal(isTrustedUpdateRequest({
+    socket: { remoteAddress: '127.0.0.1' },
+    headers: {
+      'x-dsh-plugin-update': '1',
+      host: '127.0.0.1:3000',
+      origin: 'http://127.0.0.1:3000',
+    },
+  }), false)
+
+  // Cross-site sec-fetch-site rejected (#349)
+  assert.equal(isTrustedUpdateRequest({
+    ...validLoopback,
+    headers: {
+      ...validLoopback.headers,
+      'sec-fetch-site': 'cross-site',
+    },
+  }), false)
+
+  // Same-site and none sec-fetch-site accepted (#349)
+  assert.equal(isTrustedUpdateRequest({
+    ...validLoopback,
+    headers: {
+      ...validLoopback.headers,
+      'sec-fetch-site': 'same-site',
+    },
+  }), true)
+  assert.equal(isTrustedUpdateRequest({
+    ...validLoopback,
+    headers: {
+      ...validLoopback.headers,
+      'sec-fetch-site': 'none',
+    },
+  }), true)
 
   // Missing update header
   assert.equal(isTrustedUpdateRequest({
