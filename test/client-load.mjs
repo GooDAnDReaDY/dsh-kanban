@@ -17,6 +17,8 @@ export function loadClient({ storage } = {}) {
   const sandbox = {
     window: { __ModuleLoader__: { load: (s) => { spec = s } }, localStorage: storage },
     fetch: async () => ({ ok: true, json: async () => ({}) }),
+    AbortSignal: typeof AbortSignal !== 'undefined' ? AbortSignal : undefined,
+    AbortController: typeof AbortController !== 'undefined' ? AbortController : undefined,
   }
   createContext(sandbox)
   runInNewContext(src, sandbox)

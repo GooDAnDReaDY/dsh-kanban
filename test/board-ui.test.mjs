@@ -71,7 +71,38 @@ test('каждой ошибке маршрута отвечает свой кл�
   assert.equal(h.errorKey('gitea-absent'), 'error.giteaAbsent')
   assert.equal(h.errorKey('gitea-unconfigured'), 'error.giteaUnconfigured')
   assert.equal(h.errorKey('task-has-no-issue'), 'error.taskHasNoIssue')
+  assert.equal(h.errorKey('timeout'), 'error.timeout')
   assert.equal(h.errorKey('что-то новое'), 'error.unknown')
+})
+
+test('api() при TimeoutError выбрасывает ошибку с ключом error.timeout (#348)', async () => {
+  const customClient = loadClient()
+  const customH = customClient.exported.helpers
+
+  // 1. Success case with automatic timeout signal
+  let calledOpts = null
+  customClient.sandbox.fetch = async (url, opts) => {
+    calledOpts = opts
+    return { ok: true, json: async () => ({ ok: true }) }
+  }
+  const res = await customH.api('/test')
+  assert.deepEqual(res, { ok: true })
+  assert.ok(calledOpts.signal, 'api() must attach timeout signal by default')
+
+  // 2. Timeout case
+  customClient.sandbox.fetch = async () => {
+    const err = new Error('The operation was aborted due to timeout')
+    err.name = 'TimeoutError'
+    throw err
+  }
+  await assert.rejects(
+    async () => customH.api('/test'),
+    (err) => {
+      assert.equal(err.key, 'error.timeout')
+      assert.equal(err.name, 'TimeoutError')
+      return true
+    }
+  )
 })
 
 test('при живом слоте плагинов карточка встаёт именно туда', () => {
