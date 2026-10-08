@@ -46,7 +46,7 @@ test('runTask с resume: true отправляет событие task-resume и
       agents,
       store,
       task: createdTask,
-      config: withDefaults(),
+      config: withDefaults({ worktreeIsolation: false }),
       provider: 'anthropic',
       model: 'claude-3-5-sonnet',
       mintSessionId: () => 'session-resume-1',
@@ -145,7 +145,7 @@ export async function resolve(specifier, context, nextResolve) {
       logger: { warn() {}, info() {}, error() {}, debug() {} },
     }
 
-    mod.apply(mockCtx, {})
+    mod.apply(mockCtx, { worktreeIsolation: false })
 
     const taskRoute = registeredRoutes.get('/dsh-kanban/task')
     assert.ok(taskRoute, 'prefix /dsh-kanban/task must be registered')

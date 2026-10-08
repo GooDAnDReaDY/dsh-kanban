@@ -11,7 +11,7 @@ provides workflow columns with DoD checklist verification, and delivers real-tim
 - Work directory: `/mnt/external/Project/DEV/dhsplugins/dsh-kanban`.
 - Execution user: `vadim`. All git commands, tests, and builds run as `vadim` via:
   `sudo -u vadim -H bash -lc '<command>'`.
-- Git author wrapper: `/home/vadim/.ssh/bin/git-antigravity`.
+- Git author wrapper: Each agent must use its dedicated Git wrapper from `/home/vadim/.ssh/bin/git-<agent>` (e.g., `git-antigravity`, `git-codex`, `git-claude`, `git-cursor`, `git-hermes`, etc.) according to the agent identity matrix. Never commit using another agent's identity.
 - Gitea credentials: `/mnt/external/Project/DEV/.gitea-agent-credentials.json`.
 - Gitea repository: `goodandready/dsh-kanban`.
 - GitHub repository: `GooDAnDReaDY/dsh-kanban`.

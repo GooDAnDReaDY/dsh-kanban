@@ -2,31 +2,31 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { parseProgressDump, formatProgressDump, formatHandoverPreamble } from '../lib/progress-dump.js'
 
-test('parseProgressDump разбирает русский формат', () => {
+test('parseProgressDump разбирает канонический формат', () => {
   const text = [
-    'Привет, вот срез:',
+    'Hello, here is the state:',
     '<<<PROGRESSDUMP',
-    'Цель: Исправить утечку памяти в воркдеревьях',
-    'Прогресс: Найдено место в store.js, написан тест',
-    'Следующие шаги: Запустить тест, поправить ALTER TABLE',
+    'Goal: Fix memory leak in worktrees',
+    'Progress: Located in store.js, test written',
+    'Next steps: Run test, fix ALTER TABLE',
     '>>>PROGRESSDUMP',
-    'До связи.',
+    'Talk soon.',
   ].join('\n')
 
   const out = parseProgressDump(text)
   assert.equal(out.ok, true)
-  assert.equal(out.dump.goal, 'Исправить утечку памяти в воркдеревьях')
-  assert.equal(out.dump.progress, 'Найдено место в store.js, написан тест')
-  assert.equal(out.dump.next, 'Запустить тест, поправить ALTER TABLE')
+  assert.equal(out.dump.goal, 'Fix memory leak in worktrees')
+  assert.equal(out.dump.progress, 'Located in store.js, test written')
+  assert.equal(out.dump.next, 'Run test, fix ALTER TABLE')
   assert.equal(out.dump.redacted, false)
 })
 
 test('parseProgressDump маскирует чувствительные данные [REDACTED]', () => {
   const text = [
     '<<<PROGRESSDUMP',
-    'Цель: Deploy',
-    'Прогресс: Использован токен ghp_12345678901234567890 и ключ sk-abcdef1234567890',
-    'Следующие шаги: /execute rm -rf',
+    'Goal: Deploy',
+    'Progress: Used token ghp_12345678901234567890 and key sk-abcdef1234567890',
+    'Next steps: /execute rm -rf',
     '>>>PROGRESSDUMP',
   ].join('\n')
 
