@@ -271,6 +271,9 @@ test('cleanupTaskWorktree проводит полный цикл безопас�
   // Чистый воркдерево
   const cleanRunner = async (args) => {
     if (args[0] === 'status') return { stdout: '' }
+    if (args[0] === 'worktree' && args[1] === 'list') {
+      return { stdout: `worktree ${process.cwd()}\nHEAD 123\nbranch refs/heads/task/done-1\n` }
+    }
     return { stdout: '' }
   }
 

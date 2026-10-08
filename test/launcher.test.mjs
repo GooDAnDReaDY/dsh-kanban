@@ -5,7 +5,7 @@ import { freshStore } from './helpers.mjs'
 import { withDefaults } from '../lib/config.js'
 import { buildStartMessage, resolveCwd, runTask, obtainAgent, resolveModel } from '../lib/launcher.js'
 
-const config = withDefaults({ defaultProjectRoot: '/projects' })
+const config = withDefaults({ defaultProjectRoot: '/projects', sessionDefaultPermission: '' })
 
 /**
  * Заглушка службы агентов.

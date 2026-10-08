@@ -38,6 +38,7 @@ test('obtainAgent сохраняет meta.cwd как projectRoot при созд
   const config = withDefaults({
     defaultProjectRoot: process.cwd(),
     worktreeIsolation: true,
+    sessionDefaultPermission: '',
   })
 
   await obtainAgent({
