@@ -46,7 +46,7 @@ test('runTask с resume: true отправляет событие task-resume и
       agents,
       store,
       task: createdTask,
-      config: withDefaults({ worktreeIsolation: false }),
+      config: withDefaults({ worktreeIsolation: false, sessionDefaultPermission: '' }),
       provider: 'anthropic',
       model: 'claude-3-5-sonnet',
       mintSessionId: () => 'session-resume-1',
@@ -122,7 +122,8 @@ export async function resolve(specifier, context, nextResolve) {
       on() {},
       get(name) {
         if (name === 'agentDefaultModel') return { currentSelection: () => ({ provider: 'anthropic', model: 'claude-3-5-sonnet' }) }
-        if (name === 'permissionPresets') return []
+        if (name === 'permissionPresets') return { set() {}, names: [], optionOf() {} }
+        if (name === 'permissions') return { set() {} }
         if (name === 'workspaceRegistry') return null
         return null
       },

@@ -40,7 +40,7 @@ test('без выбора профиля поле не подставляетс�
   // у ядра нет, а «по умолчанию» — это именно отсутствие поля.
   const { agents, seen } = stubAgents()
   await obtainAgent({
-    agents, task: {}, config, provider: 'p', model: 'm', mintSessionId: () => 's1', agentPreset: '',
+    agents, task: {}, config, provider: 'p', model: 'm', mintSessionId: () => 's1', agentPreset: '', permissions: { set() {} }, permission: '',
   })
   assert.equal('agentPreset' in seen[0].meta, false)
 })
@@ -91,7 +91,7 @@ test('у живой сессии профиль и доступ не спраш�
   const live = { status: 'running', session: { id: 's1' } }
   const out = await obtainAgent({
     agents: { get: () => live }, task: { sessionId: 's1' }, config,
-    provider: 'p', model: 'm', mintSessionId: () => 'иное', agentPreset: 'reviewer',
+    provider: 'p', model: 'm', mintSessionId: () => 'иное', agentPreset: 'reviewer', permissions: { set() {} }, permission: '',
   })
   assert.equal(out.mode, 'opened')
 })

@@ -9,7 +9,7 @@ import { buildBoard } from '../lib/routes.js'
 import { withDefaults } from '../lib/config.js'
 import { freshStore } from './helpers.mjs'
 
-const config = withDefaults({})
+const config = withDefaults({ sessionDefaultPermission: '' })
 const createMessage = (m) => m
 const NOW = 1_700_000_000_000
 
