@@ -36,6 +36,9 @@ test('mergeTaskWorktree успешно выполняет git merge --no-ff и �
       if (args[0] === 'rev-parse' && args[1] === '--git-common-dir') {
         return { exitCode: 0, stdout: '/tmp/repo/.git' }
       }
+      if (args[0] === 'worktree' && args[1] === 'list') {
+        return { exitCode: 0, stdout: `worktree ${dir}\nHEAD abc\n` }
+      }
       if (args[0] === 'branch' && args[1] === '--show-current') {
         return { exitCode: 0, stdout: 'main\n' }
       }

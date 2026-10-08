@@ -80,9 +80,9 @@ test('PROGRESSDUMP передаёт вводный бриф и подхваты�
     title: 'Dump task',
     progressDump: [
       '<<<PROGRESSDUMP',
-      'Цель: Рефакторинг store.js',
-      'Прогресс: Написаны юнит-тесты',
-      'Следующие шаги: Запустить линтер',
+      'Goal: Refactoring store.js',
+      'Progress: Written unit tests',
+      'Next steps: Run linter',
       '>>>PROGRESSDUMP',
     ].join('\n'),
   })
@@ -104,7 +104,7 @@ test('PROGRESSDUMP передаёт вводный бриф и подхваты�
   // Проверяем, что в первое сообщение попал заголовок эстафеты
   const msgText = sent[0].content[0].text
   assert.ok(msgText.includes('## 📋 Task Handover (PROGRESSDUMP)'))
-  assert.ok(msgText.includes('Рефакторинг store.js'))
+  assert.ok(msgText.includes('Refactoring store.js'))
   assert.ok(msgText.includes('Продолжай работу.'))
 
   // Имитируем ответ агента со свежим PROGRESSDUMP
@@ -113,17 +113,17 @@ test('PROGRESSDUMP передаёт вводный бриф и подхваты�
     sessionId: 'session-123',
     type: 'turn/completed',
     text: [
-      'Я закончил шаг 1!',
+      'Step 1 finished!',
       '<<<PROGRESSDUMP',
-      'Цель: Рефакторинг store.js',
-      'Прогресс: Линтер пройден без ошибок',
-      'Следующие шаги: Собрать релиз',
+      'Goal: Refactoring store.js',
+      'Progress: Linter passed without errors',
+      'Next steps: Build release',
       '>>>PROGRESSDUMP',
     ].join('\n'),
   })
 
   const updatedTask = store.getTask(task.id)
-  assert.ok(updatedTask.progressDump.includes('Линтер пройден без ошибок'))
+  assert.ok(updatedTask.progressDump.includes('Linter passed without errors'))
   assert.equal(updatedTask.runs[0].result, 'succeeded')
 
   cleanup()

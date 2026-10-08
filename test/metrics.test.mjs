@@ -90,7 +90,7 @@ test('метрики собираются на живом хранилище', (
   store.moveTask(a.id, { column: 'in-progress' })
   store.addTransition({ taskId: a.id, fromCol: 'backlog', toCol: 'in-progress', source: 'manual' })
 
-  const out = boardMetrics({ store, board: 'main', now: Date.now(), staleDays: 14 })
+  const out = boardMetrics({ store, board: 'main', now: Date.now() + 10_000, staleDays: 14 })
   assert.equal(out.tasks, 1)
   assert.ok(out.columns.length >= 1)
   assert.equal(out.staleDays, 14)
