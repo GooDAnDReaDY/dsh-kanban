@@ -235,14 +235,22 @@ test('правка с чужого сайта отклоняется (isTrustedR
     socket: { remoteAddress: '127.0.0.1' },
   }), true)
 
-  // Легитимный same-site без явного socket разрешается
+  // DSH Desktop: sec-fetch-site и origin отсутствуют, remoteAddress loopback — разрешается (#363)
   assert.equal(isTrustedRequest({
     headers: {
-      'sec-fetch-site': 'same-site',
-      origin: 'http://localhost:3000',
-      host: 'localhost:3000',
+      host: '127.0.0.1:3000',
+      cookie: 'token=xyz',
     },
+    socket: { remoteAddress: '127.0.0.1' },
   }), true)
+
+  // Запрос без sec-fetch-site с не-loopback адреса отклоняется (#363)
+  assert.equal(isTrustedRequest({
+    headers: {
+      host: '192.168.1.111:3000',
+    },
+    socket: { remoteAddress: '192.168.1.50' },
+  }), false)
 })
 
 test('путь задачи разбирается вместе с действием', () => {
