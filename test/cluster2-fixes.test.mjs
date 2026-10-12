@@ -7,7 +7,7 @@ import { applyMove } from '../lib/routes.js'
 import { freshStore } from './helpers.mjs'
 import { branchOfTask, pullsOfTask } from '../lib/transitions.js'
 import { createOutbox } from '../lib/outbound.js'
-import { Config } from '../lib/index.js'
+import { CONFIG_DEFAULTS } from '../lib/config.js'
 
 test('Cluster 2 #314: buildWorkflowScript escapes dynamic parameters preventing JS injection', () => {
   const maliciousTask = {
@@ -134,7 +134,8 @@ test('Cluster 2 #324: createOutbox supports dynamic store accessor function', ()
   assert.ok(outbox)
 })
 
-test('Cluster 2 #310/#311/#313/#346: Config schema is decorated with .volatile()', () => {
-  assert.ok(Config)
-  assert.ok(typeof Config === 'function' || typeof Config === 'object')
+test('Cluster 2 #310/#311/#313/#346: CONFIG_DEFAULTS provides standard configuration schema fallbacks', () => {
+  assert.ok(CONFIG_DEFAULTS)
+  assert.equal(typeof CONFIG_DEFAULTS, 'object')
+  assert.equal(CONFIG_DEFAULTS.wipInProgress, 3)
 })
