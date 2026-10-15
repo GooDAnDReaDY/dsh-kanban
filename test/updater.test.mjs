@@ -122,3 +122,9 @@ test('updater: registerPluginUpdater binds route to ctx.webServer', async () => 
   assert.equal(typeof registered[0].handler, 'function')
   assert.equal(typeof cleanup, 'function')
 })
+
+test('updater: installExact does not override minimumReleaseAge (#369)', async () => {
+  const fs = await import('node:fs/promises')
+  const updaterSrc = await fs.readFile(new URL('../lib/updater.js', import.meta.url), 'utf8')
+  assert.equal(updaterSrc.includes('minimumReleaseAge'), false, 'updater must not bypass minimum release age')
+})
