@@ -521,3 +521,114 @@ test('read-only маршруты (/sessions, /archive, /board, /whoami, /templat
     assert.ok(responseBody && responseBody.includes('method-not-allowed'), `Маршрут ${path} должен возвращать ошибку method-not-allowed`)
   }
 })
+
+test('маршруты чтения отклоняют untrusted/cross-site запросы со статусом 403 (#369)', async () => {
+  const { Readable } = await import('node:stream')
+  const mod = await import('../lib/index.js')
+  const registeredRoutes = new Map()
+
+  const mockCtx = {
+    inject(deps, fn) {
+      fn({
+        settings: {
+          register: () => ({ get: () => ({}), watch: () => {} }),
+        },
+      })
+    },
+    effect(fn) {
+      return fn()
+    },
+    on() {},
+    get() { return null },
+    credentials: {
+      resolve: async () => ({ value: 'test' }),
+    },
+    webServer: {
+      use() {},
+      register(route) {
+        registeredRoutes.set(route.path, route)
+      },
+    },
+    agents: {
+      get() { return null },
+    },
+    logger: {
+      warn() {},
+      info() {},
+      error() {},
+    },
+  }
+
+  mod.apply(mockCtx, {})
+
+  const readPaths = [
+    '/dsh-kanban/presets',
+    '/dsh-kanban/sessions',
+    '/dsh-kanban/archive',
+    '/dsh-kanban/board',
+    '/dsh-kanban/whoami',
+    '/dsh-kanban/templates',
+    '/dsh-kanban/metrics',
+    '/dsh-kanban/export.csv',
+    '/dsh-kanban/snapshot',
+    '/dsh-kanban/gitea/repos',
+    '/dsh-kanban/gitea/issues',
+    '/dsh-kanban/models',
+  ]
+
+  for (const p of readPaths) {
+    const route = registeredRoutes.get(p)
+    assert.ok(route, 'Route must be registered: ' + p)
+
+    const req = new Readable({
+      read() { this.push(null) },
+    })
+    req.method = 'GET'
+    req.url = p
+    req.headers = {
+      host: 'attacker.evil.com:3000',
+      'sec-fetch-site': 'same-origin',
+      origin: 'http://attacker.evil.com:3000',
+    }
+    req.socket = { remoteAddress: '127.0.0.1' }
+
+    let status = null
+    let responseBody = null
+    const res = {
+      writeHead(code, headers) { status = code },
+      end(data) { responseBody = data },
+    }
+
+    await route.handler(req, res)
+    assert.equal(status, 403, 'Route must return 403 on DNS-rebinding: ' + p)
+    assert.ok(responseBody && responseBody.includes('cross-site'), 'Route must return cross-site error: ' + p)
+  }
+
+  // Prefix routes: /dsh-kanban/task/:id/log, body, message
+  const taskRoute = registeredRoutes.get('/dsh-kanban/task')
+  assert.ok(taskRoute, 'Route /dsh-kanban/task must be registered')
+  for (const action of ['log', 'body', 'message']) {
+    const req = new Readable({
+      read() { this.push(null) },
+    })
+    req.method = 'GET'
+    req.url = '/dsh-kanban/task/task-1/' + action
+    req.headers = {
+      host: 'attacker.evil.com:3000',
+      'sec-fetch-site': 'same-origin',
+      origin: 'http://attacker.evil.com:3000',
+    }
+    req.socket = { remoteAddress: '127.0.0.1' }
+
+    let status = null
+    let responseBody = null
+    const res = {
+      writeHead(code, headers) { status = code },
+      end(data) { responseBody = data },
+    }
+
+    await taskRoute.handler(req, res)
+    assert.equal(status, 403, 'Action must return 403 on DNS-rebinding: ' + action)
+    assert.ok(responseBody && responseBody.includes('cross-site'), 'Action must return cross-site error: ' + action)
+  }
+})

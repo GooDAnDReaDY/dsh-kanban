@@ -5,6 +5,7 @@ import { withDefaults } from '../lib/config.js'
 import {
   buildBoard, applyMove, createTask, updateTask, deleteTask, taskLog,
   taskBySession, isTrustedRequest, parseTaskPath, exportBoard, importBoard,
+  isLoopbackAddress, isLanAddress, isTrustedHost,
 } from '../lib/routes.js'
 
 const config = withDefaults({})
@@ -251,6 +252,113 @@ test('правка с чужого сайта отклоняется (isTrustedR
     },
     socket: { remoteAddress: '192.168.1.50' },
   }), false)
+})
+
+test('isLoopbackAddress, isLanAddress, isTrustedHost валидируют адреса (#369)', () => {
+  // Loopback
+  assert.equal(isLoopbackAddress('127.0.0.1'), true)
+  assert.equal(isLoopbackAddress('127.0.1.1'), true)
+  assert.equal(isLoopbackAddress('::1'), true)
+  assert.equal(isLoopbackAddress('localhost'), true)
+  assert.equal(isLoopbackAddress('::ffff:127.0.0.1'), true)
+  assert.equal(isLoopbackAddress('[::1]'), true)
+  assert.equal(isLoopbackAddress('192.168.1.1'), false)
+  assert.equal(isLoopbackAddress('evil.com'), false)
+  assert.equal(isLoopbackAddress(undefined), false)
+
+  // LAN
+  assert.equal(isLanAddress('192.168.1.1'), true)
+  assert.equal(isLanAddress('10.0.0.1'), true)
+  assert.equal(isLanAddress('172.16.0.1'), true)
+  assert.equal(isLanAddress('172.31.255.255'), true)
+  assert.equal(isLanAddress('127.0.0.1'), true)
+  assert.equal(isLanAddress('172.32.0.1'), false)
+  assert.equal(isLanAddress('8.8.8.8'), false)
+  assert.equal(isLanAddress('evil.com'), false)
+
+  // Trusted host
+  assert.equal(isTrustedHost('localhost:3000'), true)
+  assert.equal(isTrustedHost('127.0.0.1:3000'), true)
+  assert.equal(isTrustedHost('[::1]:3000'), true)
+  assert.equal(isTrustedHost('minipc.local:3000'), true)
+  assert.equal(isTrustedHost('192.168.1.111:3000'), true)
+  assert.equal(isTrustedHost('10.0.0.5:80'), true)
+  assert.equal(isTrustedHost('attacker.evil.com:3000'), false)
+  assert.equal(isTrustedHost('rebound.example.com'), false)
+  assert.equal(isTrustedHost('8.8.8.8:3000'), false)
+  assert.equal(isTrustedHost(''), false)
+  assert.equal(isTrustedHost(undefined), false)
+})
+
+test('DNS-rebinding и поддельный origin отклоняются (isTrustedRequest) (#369)', () => {
+  // Rebound page targeting loopback with matching Origin and Host
+  assert.equal(isTrustedRequest({
+    headers: {
+      'sec-fetch-site': 'same-origin',
+      origin: 'http://attacker.rebound.com:3000',
+      host: 'attacker.rebound.com:3000',
+    },
+    socket: { remoteAddress: '127.0.0.1' },
+  }), false)
+
+  // Rebound request without sec-fetch-site
+  assert.equal(isTrustedRequest({
+    headers: {
+      host: 'attacker.rebound.com:3000',
+    },
+    socket: { remoteAddress: '127.0.0.1' },
+  }), false)
+
+  // Public IP in host header rejected even with loopback socket
+  assert.equal(isTrustedRequest({
+    headers: {
+      host: '203.0.113.1:3000',
+      'sec-fetch-site': 'same-origin',
+      origin: 'http://203.0.113.1:3000',
+    },
+    socket: { remoteAddress: '127.0.0.1' },
+  }), false)
+
+  // Rebound Referer header rejected
+  assert.equal(isTrustedRequest({
+    headers: {
+      host: 'localhost:3000',
+      'sec-fetch-site': 'same-origin',
+      origin: 'http://localhost:3000',
+      referer: 'http://attacker.rebound.com/page',
+    },
+    socket: { remoteAddress: '127.0.0.1' },
+  }), false)
+
+  // Legitimate LAN browser request with same-origin
+  assert.equal(isTrustedRequest({
+    headers: {
+      host: '192.168.1.111:3000',
+      'sec-fetch-site': 'same-origin',
+      origin: 'http://192.168.1.111:3000',
+    },
+    socket: { remoteAddress: '192.168.1.50' },
+  }), true)
+
+  // Legitimate .local browser request
+  assert.equal(isTrustedRequest({
+    headers: {
+      host: 'minipc.local:3000',
+      'sec-fetch-site': 'same-origin',
+      origin: 'http://minipc.local:3000',
+    },
+    socket: { remoteAddress: '192.168.1.50' },
+  }), true)
+
+  // Legitimate IPv6 loopback
+  assert.equal(isTrustedRequest({
+    headers: {
+      host: '[::1]:3000',
+      'sec-fetch-site': 'same-origin',
+      origin: 'http://[::1]:3000',
+    },
+    socket: { remoteAddress: '::1' },
+  }), true)
 })
 
 test('путь задачи разбирается вместе с действием', () => {
