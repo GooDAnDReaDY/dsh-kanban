@@ -2,6 +2,16 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.29
+
+### Fixed
+- **Agent Prompt & Board Tools Availability Alignment (#382, GitHub #1)**:
+  - Replaced unconditional system prompt injection with dynamic helper `buildPromptSectionText(cfg)`.
+  - Suppressed prompt section on stock configurations where neither board tools nor progress dumps are active (`boardToolEnabled: false`, `progressDumpEnabled: false`), preventing model hallucinations and saving context tokens.
+  - Strictly gated tool usage guidance (`board_move`, `board_plan`) on `boardToolEnabled === true`.
+  - Gated `PROGRESSDUMP` guidance on `progressDumpEnabled === true`.
+  - Updated `CONFIG_HINTS.announceToAgent` description in `lib/config.js`.
+
 ## 0.2.22
 
 ### Fixed
