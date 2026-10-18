@@ -222,7 +222,7 @@ dsh-kanban:
 
 ## 🧪 Testing & Verification
 
-Run the comprehensive 520+ unit and integration test suite:
+Run the comprehensive 730+ unit and integration test suite:
 
 ```bash
 npm test

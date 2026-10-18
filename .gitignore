@@ -1,6 +1,5 @@
+node_modules
 node_modules/
 .worktrees/
 *.log
-AGENTS.md
-index.md
 docs/plans/

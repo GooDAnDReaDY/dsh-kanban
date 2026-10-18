@@ -2,6 +2,118 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.29
+
+### Fixed
+- **Agent Prompt & Board Tools Availability Alignment (#382, GitHub #1)**:
+  - Replaced unconditional system prompt injection with dynamic helper `buildPromptSectionText(cfg)`.
+  - Suppressed prompt section on stock configurations where neither board tools nor progress dumps are active (`boardToolEnabled: false`, `progressDumpEnabled: false`), preventing model hallucinations and saving context tokens.
+  - Strictly gated tool usage guidance (`board_move`, `board_plan`) on `boardToolEnabled === true`.
+  - Gated `PROGRESSDUMP` guidance on `progressDumpEnabled === true`.
+  - Updated `CONFIG_HINTS.announceToAgent` description in `lib/config.js`.
+
+## 0.2.22
+
+### Fixed
+- **Git Runner Process Exit Contract (#327)**:
+  - Standardized runner status evaluation in `lib/worktree.js` (`diff`, `commits`, `merge`) to support both `result.exitCode` and `result.code` uniformly.
+- **Workflow & Batch Permission Negotiation Gate (#328)**:
+  - Enforced permission tier verification (`permissionConfirmedTier`) in `lib/launcher.js`, `lib/routes.js`, and `lib/workflow-bridge.js`. Prevents elevation attacks when a task's permission is re-requested at a higher tier than confirmed by the user.
+- **Opened & Resumed Session Effective Permission Enforcement (#329)**:
+  - Unified `applyPermission` invocation across newly created, opened, and resumed sessions in `lib/launcher.js`. Ensured chosen or stored `task.permission` is consistently applied to the agent session; rejects task execution fail-closed (`permission-unavailable`) if permissions setter is missing or fails.
+- **Global Cross-Board Session Concurrency Limit (#330)**:
+  - Extended live session counting across all boards via `store.listBoards()` in `lib/launcher.js` and `lib/workflow-bridge.js`, backed by atomic reservation tracking (`reserveSessionSlot`, `releaseSessionSlot`) to eliminate race conditions during concurrent task spawning.
+- **Delayed & Queued Launch Parameter Preservation (#331)**:
+  - Ensured queued/cron task dispatches in `lib/launcher.js` preserve all card parameters: `provider`, `model`, `permission`, `reasoningEffort`, `agentPreset`, and initial handover text.
+- **Dual-Forge Routing for GitHub & Gitea (#332)**:
+  - Added native `forge` attribution (`github` vs `gitea`) across `lib/store.js`, `lib/routes.js`, `lib/import.js`, `lib/sync.js`, and `lib/outbound.js`. Synchronizations and outbound dispatches group and route tasks to the corresponding forge client.
+- **Full JSON Snapshot Import/Export Data Integrity (#333)**:
+  - Extended JSON export and import in `lib/store.js` and `lib/routes.js` to serialize and restore all 16 canonical task fields, archived tasks (`restoreTask`), and full transition history (`restoreTransition`).
+- **Human DoD Acceptance Workflow Completion Boundary (#334)**:
+  - Restricted automated workflow completion advancement in `lib/workflow-bridge.js` to `review` column (`in-progress` and `review` map to `review`). The `done` column remains strictly reserved for human DoD acceptance and review sign-off.
+- **Reasoning Effort Parameter Persistence & Propagation (#335)**:
+  - Preserved `reasoningEffort` across card update routes (`updateTask`) and passed it to agent lifecycle calls (`agents.create` and `agents.resume`) in `lib/launcher.js`.
+- **Composite Git Provider Repository Creation (#336)**:
+  - Exported `createRepo` from composite `lib/git-provider.js` and implemented `createRepo` in `lib/github.js` for parity with Gitea.
+- **Multiline Progress Dump Block Roundtrip (#338)**:
+  - Enhanced `lib/progress-dump.js` to cleanly capture multiline `Next steps:` blocks and verified `parse(format(dump))` bidirectional roundtrip fidelity.
+- **Checklist Toggle API Canonical Completed State (#339)**:
+  - Added canonical `completed: Boolean` alongside backward-compatible `done` in `toggleChecklistItem` in `lib/routes.js`.
+- **CSV Formula Injection Mitigation (#340)**:
+  - Sanitized untrusted cell strings starting with formula trigger prefixes (`=`, `+`, `-`, `@`, `\t`, `\r`) in `exportTasksCsv` in `lib/routes.js` per OWASP guidelines.
+- **Fail-Closed Git Cleanup & Safe Removal (#341)**:
+  - In `lib/worktree.js`, failed closed when git dirty status check cannot be determined, blocking deletion on runner errors and removing unsafe forced deletion fallbacks.
+- **Worktree Isolation Precondition Enforcement (#342)**:
+  - Enforced worktree isolation in `lib/launcher.js`: when worktree creation fails for a git repository, execution halts immediately with error rather than unsafely falling back to the project root.
+- **Broadcasting SSE State Changes on HTTP Mutations (#343)**:
+  - Wired `eventHub` into `lib/index.js` and `lib/board-tool.js` to broadcast `task:change` SSE events on all card mutations (`createTask`, `updateTask`, `deleteTask`, `setArchived`, `importBoard`, `syncAll`, and AI board tools).
+- **Documentation & Agent Specification Alignment (#344)**:
+  - Added canonical `AGENTS.md` and `docs/index.md`, repaired relative markdown links in `docs/design/DESIGN.md`, and aligned column definitions across documentation.
+- **CC0 Fractional Indexing Replacement & Migration (#345)**:
+  - Replaced linear string inflation in `lib/order.js` with CC0-1.0 `fractional-indexing` (`lib/fractional-indexing.js`), maintaining bounded key lengths (4 bytes after 10,000 appends). Added atomic SQLite startup migration `fractional_indexing_migrated`.
+
+## 0.2.21
+
+### Fixed
+- **Settings Service Compatibility & Schema Protection (#310, #311, #313, #346)**:
+  - Eliminated `sctx.settings.register` calls (method does not exist in DSH 0.2.0-rc.x), avoiding runtime exceptions during plugin startup.
+  - Migrated configuration updates to standard schema description and watcher lifecycle.
+  - Decorated sensitive and transient config schema fields with `.volatile()`.
+- **Workflow Script Code Injection Prevention (#314)**:
+  - Replaced raw template literal interpolation in `buildWorkflowScript` with safe `JSON.stringify` serialization for dynamic parameters (`issueNumber`, task ids, roles, and titles).
+- **Worktree Ownership & Path Traversal Fencing (#315)**:
+  - Enforced `isPathFenced` boundary validation across `cleanupTaskWorktree` and `removeTaskWorktree`, blocking execution against foreign or out-of-bounds directories.
+- **SSE Origin Verification & Strict Headers (#316)**:
+  - Restricted SSE event stream in `lib/events.js` using `isTrustedRequest` and removed wildcard `*` CORS header.
+- **Fail-Closed Permission Gate & Config Hint Alignment (#317)**:
+  - Defaulted unknown permission tiers to `Infinity` (fail closed) in permission ranking checks.
+  - Corrected `sessionDefaultPermission` configuration description hint to `(read-only, workspace-write, danger-full-access)`.
+- **Board Move Column Validation (#318)**:
+  - Enforced column existence verification against board columns (`columnsOf`) in `applyMove`, rejecting invalid column targets with HTTP 400 `invalid-column`.
+- **Credential Reference Recognition (#319)**:
+  - Updated secret detection in `lib/gitea.js` (`looksLikeSecret` / `isCredentialName`) to support valid uppercase credential reference identifiers >= 32 characters without misclassifying them as raw secrets.
+- **Workflow Completion Comment Preservation (#320)**:
+  - Fixed workflow completion handler in `lib/workflow-bridge.js` to call `this.store.addComment`, and added `store.addTaskComment` compatibility alias in `lib/store.js`.
+- **Git Branch Argument Injection Prevention (#321)**:
+  - Validated target checkout branch with `isSafeBranchName` and enforced disambiguated `git checkout -- <target>` in `mergeTaskWorktree`.
+- **Regex Metacharacter Escaping (#322)**:
+  - Escaped regex metacharacters in `branchOfTask` and `pullsOfTask` issue matching, and strictly required positive safe integers.
+- **Sequential Outbox Delivery (#323)**:
+  - Replaced unawaited `forEach` in `runBatch` with sequential `for (const item of batch) await send(item)` to ensure reliable message delivery order.
+- **Dynamic Outbox Store Binding (#324)**:
+  - Supported dynamic store accessor function in `createOutbox` to prevent capturing stale `undefined` during initialization.
+- **User Identity Claim Security (#325)**:
+  - Removed client header spoofing via `x-dsh-user` in `claimAs`, resolving user identity exclusively through authenticated `await whoAmI()`.
+- **GitHub Issue Index Validation (#326)**:
+  - Enforced strict positive safe integer validation (`safeIssueIndex`) and URI encoding for GitHub issue indices.
+
+## 0.2.20
+
+### Fixed
+- **Complete Localization & Code Comments English Standardization (#258, #347, #350)**:
+  - Eliminated all hardcoded Russian text from runtime server code across `lib/*.js`: API error messages, log warnings, transition history details, CSV export headers, and prompts are now standardized in natural English.
+  - Replaced all 1552 lines of Russian code comments across all modules in `lib/` with concise, natural technical English. Verified zero Cyrillic lines across all `lib/*.js` files (`grep -cP '[\u0400-\u04FF]' lib/*.js == 0`).
+  - Standardized transition history details in English: assignee assignment/unassignment, conflict resolution messages, PR creation/merge, and session queue events.
+  - Exported CSV headers updated to standard English (`ID`, `Title`, `Column`, `Priority`, `Repository`, `Issue #`, `Assignee`, `Model`, `Provider`, `Reasoning Effort`, `Workspace`, `Branch`, `Created`, `Updated`).
+  - Unit test suite passes 100% (737/737 tests passing).
+
+## 0.2.19
+
+### Fixed
+- **Webhook provider resolution (#303)**: connected `detectWebhookProvider` to route handler in `lib/index.js` and removed unused public export of `LABEL_ROLE_PATTERNS` in `lib/workflow-bridge.js`.
+- **Intake rejection slugs & template base (#304)**: converted hardcoded Russian rejection reasons in `lib/intake.js` to canonical English machine slugs (`missing-number`, `pull-request-ignored`, `issue-closed`, `already-exists`, `tombstone-ignored`) and converted default task templates in `lib/templates.js` to canonical English base.
+- **SQLite busy timeout & route method enforcement (#305)**: removed duplicate `PRAGMA busy_timeout` call in `lib/store.js` and enforced HTTP 405 Method Not Allowed checks on all read-only routes in `lib/index.js`.
+
+## 0.2.18
+
+### Fixed
+- **Workflow start reference error (#302)**: fix undeclared identifier `gitRunner` in `POST /dsh-kanban/task/:id/workflow-start`. Export `defaultGitRunner` from `lib/worktree.js`, import and pass it explicitly in `lib/index.js`, and set `gitRunner = defaultGitRunner` default parameter in `WorkflowBridge.startTaskWorkflow`. Added integration test verifying error-free workflow startup.
+
+## 0.2.17
+
+### Added
+- **Core Workflow Engine Bridge (#300)**: integrated directly with core `ctx.workflowEngine` without intermediate orchestrators. Task launch generates a multi-agent workflow script (`buildWorkflowScript`) with role mapping (`spec`, `backend`, `qa_tests`, `docs`) based on card columns and labels, with graceful fallback to default preset if role packages are absent. Synchronizes core lifecycle events (`workflow/agent-start`, `workflow/agent-end`, `workflow/end`) with SQLite task state (`workflowRunId`, `workflowStatus`: `running`, `completed`, `failed`, `cancelled`), auto-advances the card to the target column on completion, and posts completion summaries to linked Gitea/GitHub issues and card comments. Adds workflow run cancellation (`POST /task/:id/workflow-cancel`), status endpoint (`GET /task/:id/workflow-status`), and interactive UI buttons (`⚡ Workflow`, `Cancel Workflow`) in TaskDrawer. Completely removes dependency on `@goodandready/dsh-agent-orchestrator`.
+
 ## 0.2.16
 
 ### Fixed
