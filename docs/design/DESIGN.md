@@ -226,3 +226,20 @@
   Эндпоинт `POST /task/:id/discard` позволяет безопасно откатывать изменения отдельных файлов: для отслеживаемых файлов выполняется восстановление через `git restore` / `git checkout`, для неотслеживаемых — удаление с диска с жесткой проверкой от выхода за пределы воркдерева (path traversal protection).
 - **Interactive Diff UI**:
   В модальном окне задачи отображается список измененных файлов с бейджами статусов, счетчиками строк и кнопкой «Discard» с подтверждением действия, а также сворачиваемая панель diff.
+
+
+### Interactive Live Steering (Nudge) from Kanban Card (#373)
+- **Direct Agent Steering from Active Card**:
+  Для задач в колонке `in-progress` с живой сессией агента (`task.state === 'running' || task.state === 'idle'`) карточка канбан-доски предоставляет интерактивную кнопку «💬 Nudge». Нажатие открывает диалоговое окно для отправки подсказки, корректировки или уточнения требований непосредственно работающему агенту.
+- **Producer-Owned Message Injection & Session Followup**:
+  Бэкенд-обработчик (`handleTaskNudge`, `POST /dsh-kanban/task/:id` с `action: 'nudge'`) валидирует состояние сессии и вызывает `agent.followup` с сообщением спецификации DSH v4 (`source.kind: 'dsh-kanban'`, `source.form: 'task-nudge'`). Отправленный промпт автоматически добавляется в журнал комментариев задачи с меткой `[Steering Nudge]`, сохраняя полный аудиторский след взаимодействия оператора с агентом.
+- **Real-Time Execution Step Telemetry**:
+  Карточка на доске в реальном времени отображает текущий шаг/активность агента (`task.liveStep`, извлекаемый из проекции сессии `live.step || live.activity || live.stateDetail`) с анимированным индикатором выполнения.
+
+### Token & Cost Telemetry via @goodandready/dsh-cost-meter (#374)
+- **Zero-Coupling Dynamic Discovery**:
+  Интеграция с плагином `@goodandready/dsh-cost-meter` построена на динамическом обнаружении сервиса (`isCostMeterAvailable(ctx)`), исключая статическое объявление `inject` в `lib/index.js`. Плагин `dsh-kanban` безупречно загружается и функционирует даже при отсутствии установленного `dsh-cost-meter`.
+- **Session Token Aggregation & Cost Calculation**:
+  Модуль `lib/cost-telemetry.js` извлекает статистику использования токенов из проекции сессий (`extractSessionUsage`), агрегируя кэшированный ввод, исходящие токены и кэш-хиты по всем задействованным моделям. Стоимость рассчитывается (`calculateTokenCost`) на базе тарифной сетки (включая стандартную шкалу DeepSeek и кастомные тарифы) с конвертацией валют и форматированием (`$0.42`, `₽38.50`).
+- **Budget Limits & UI Highlights**:
+  В настройках плагина предусмотрены параметры `costMeterEnabled` и `taskCostLimit` (USD). При превышении лимита на карточке появляется предупреждающий бейдж `⚠️ Budget Exceeded`, а в модальном окне задачи отображается подробная разбивка по типам токенов (Tokens, Input, Output, Cache) и итоговой стоимости.
