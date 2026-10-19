@@ -209,3 +209,20 @@
 - **Run Cancellation & UI Controls**:
   Поддержана отмена выполняющегося воркфлоу (`POST /task/:id/workflow-cancel`) и статус-эндпоинт (`GET /task/:id/workflow-status`). В интерфейсе карточки (`lib/client.js`) выведены кнопки запуска `⚡ Workflow` и отмены `Cancel Workflow`, а также статус `⚡ Workflow` на доске.
 
+
+
+### Automated Verification Gate on Review (#372)
+- **Automatic Quality Gate on Transition to Review**:
+  При перемещении задачи в колонку `review` (через UI карточки или инструмент агента `board_move`) плагин автоматически запускает настроенную команду верификации (`verificationCommand`, по умолчанию `npm test`) в рабочей директории воркдерева (`task.worktree`).
+- **Failure Blocking & Prompt Feedback**:
+  В случае ненулевого кода возврата переход блокируется (HTTP 422 в API, отказ в `board_move`), в карточке и логе задачи фиксируется статус `failed`, а активной сессии агента через `agent.followup` отправляется структурированное сообщение (`source.kind: 'dsh-kanban'`, `source.form: 'verification-failure'`) со сниппетом ошибки для исправления.
+- **Card Badges & Diagnostics**:
+  На карточке канбан-доски и в модальном окне отображается индикатор `PASS` / `FAIL`, а при сбое — блок диагностики с командой и логом вывода.
+
+### Worktree Diff Inspector & Safe File Discard (#371)
+- **Structured Diff API**:
+  Эндпоинт `GET /task/:id/diff` возвращает структурированный список измененных файлов с детальным статусом (`modified`, `added`, `deleted`, `untracked`) и статистикой строк (`+insertions / -deletions` через `git diff --numstat`), а также унифицированный diff (с ограничением объема 500 КБ).
+- **Safe Granular Discard**:
+  Эндпоинт `POST /task/:id/discard` позволяет безопасно откатывать изменения отдельных файлов: для отслеживаемых файлов выполняется восстановление через `git restore` / `git checkout`, для неотслеживаемых — удаление с диска с жесткой проверкой от выхода за пределы воркдерева (path traversal protection).
+- **Interactive Diff UI**:
+  В модальном окне задачи отображается список измененных файлов с бейджами статусов, счетчиками строк и кнопкой «Discard» с подтверждением действия, а также сворачиваемая панель diff.
