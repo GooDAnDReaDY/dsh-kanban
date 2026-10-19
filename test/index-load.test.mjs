@@ -744,3 +744,77 @@ test('LAN-клиент без аутентификации получает 401 
   assert.equal(authedStatus, 200, 'Authenticated LAN request must succeed on /dsh-kanban/sessions')
   assert.ok(authedBody && authedBody.includes('sessions'))
 })
+
+test('lib/index.js exports inject containing connection (#384)', async () => {
+  const mod = await import('../lib/index.js')
+  assert.ok(Array.isArray(mod.inject), 'inject must be an array')
+  assert.ok(mod.inject.includes('connection'), 'inject must declare connection service')
+})
+
+test('proxied LAN request without client credentials rejected with 401 on /batch (#384)', async () => {
+  const { Readable } = await import('node:stream')
+  const mod = await import('../lib/index.js')
+  const registeredRoutes = new Map()
+
+  const mockCtx = {
+    inject(deps, fn) {
+      fn({
+        settings: {
+          register: () => ({ get: () => ({}), watch: () => {} }),
+        },
+      })
+    },
+    effect(fn) { return fn() },
+    on() {},
+    get(name) {
+      if (name === 'connection') {
+        return {
+          requestRejection: () => undefined, // Simulates connection service fooled by loopback cookie
+        }
+      }
+      return null
+    },
+    credentials: { resolve: async () => ({ value: 'test' }) },
+    webServer: {
+      use() {},
+      register(route) { registeredRoutes.set(route.path, route) },
+    },
+    agents: { get() { return null } },
+    logger: { warn() {}, info() {}, error() {} },
+  }
+
+  mod.apply(mockCtx, {})
+
+  const batchRoute = registeredRoutes.get('/dsh-kanban/batch')
+  assert.ok(batchRoute, 'Route /dsh-kanban/batch must be registered')
+
+  // Proxied unauthenticated request: loopback socket, x-forwarded-for from LAN, injected loopback cookie
+  const req = new Readable({
+    read() {
+      this.push(Buffer.from('{}'))
+      this.push(null)
+    },
+  })
+  req.method = 'POST'
+  req.url = '/dsh-kanban/batch'
+  req.headers = {
+    host: '127.0.0.1:3000',
+    'sec-fetch-site': 'same-origin',
+    origin: 'http://127.0.0.1:3000',
+    'content-type': 'application/json',
+    'x-forwarded-for': '192.168.1.55',
+    cookie: 'dsh-auth-VOnL-15rFsUiCnRoyGFksKvWKcwNBRz5iarRem0Ilvo=token',
+  }
+  req.socket = { remoteAddress: '127.0.0.1' }
+
+  let status = null
+  let body = null
+  const res = {
+    writeHead(code) { status = code },
+    end(data) { body = data },
+  }
+
+  await batchRoute.handler(req, res)
+  assert.equal(status, 401, 'Proxied batch request without client credentials must return 401')
+  assert.ok(body && body.includes('unauthorized'))
+})

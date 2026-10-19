@@ -7,6 +7,7 @@ import {
   taskBySession, isTrustedRequest, getRejectionStatus, rejectUntrustedRequest,
   getClientIp, parseTaskPath, exportBoard, importBoard,
   isLoopbackAddress, isLanAddress, isTrustedHost,
+  normalizeIp, cookieNameForAuthority, isLoopbackCookieName, hasClientCredentials,
 } from '../lib/routes.js'
 
 const config = withDefaults({})
@@ -537,4 +538,71 @@ test('аутентификация через connection.requestRejection защ
 
   // 9. rejectUntrustedRequest пропускает доверенный запрос
   assert.equal(rejectUntrustedRequest(lanReq, {}, authConn), false)
+})
+
+test('reverse proxy fencing and client credentials validation (#384)', () => {
+  // 1. normalizeIp
+  assert.equal(normalizeIp('::ffff:127.0.0.1'), '127.0.0.1')
+  assert.equal(normalizeIp('[::1]'), '::1')
+  assert.equal(normalizeIp('192.168.1.50'), '192.168.1.50')
+
+  // 2. cookieNameForAuthority and isLoopbackCookieName
+  const loopCookie = cookieNameForAuthority('127.0.0.1:3000')
+  const lanCookie = cookieNameForAuthority('192.168.1.111:3080')
+  assert.equal(isLoopbackCookieName(loopCookie, '127.0.0.1:3000'), true)
+  assert.equal(isLoopbackCookieName(lanCookie, '127.0.0.1:3000'), false)
+
+  // 3. hasClientCredentials
+  assert.equal(hasClientCredentials({ headers: {} }), false)
+  assert.equal(hasClientCredentials({ headers: { cookie: `${loopCookie}=some_token` } }), false)
+  assert.equal(hasClientCredentials({ headers: { cookie: `${loopCookie}=some_token; ${lanCookie}=lan_token` } }), true)
+  assert.equal(hasClientCredentials({ headers: { authorization: 'Bearer xyz' } }), true)
+  assert.equal(hasClientCredentials({ headers: { 'x-dsh-lan-pin': '1234' } }), true)
+  assert.equal(hasClientCredentials({ headers: { cookie: 'dsh_lan_pin=1234' } }), true)
+  assert.equal(hasClientCredentials({ headers: { cookie: 'dsh_token=secret' } }), true)
+
+  // 4. getClientIp
+  // Direct loopback
+  assert.equal(getClientIp({ socket: { remoteAddress: '127.0.0.1' }, headers: {} }), '127.0.0.1')
+  // Proxied from LAN
+  assert.equal(
+    getClientIp({ socket: { remoteAddress: '127.0.0.1' }, headers: { 'x-forwarded-for': '192.168.1.55, 10.0.0.1' } }),
+    '192.168.1.55'
+  )
+  // Non-loopback socket ignores spoofed x-forwarded-for
+  assert.equal(
+    getClientIp({ socket: { remoteAddress: '192.168.1.99' }, headers: { 'x-forwarded-for': '127.0.0.1' } }),
+    '192.168.1.99'
+  )
+
+  // 5. getRejectionStatus behind reverse proxy
+  // Reverse proxy forwards request with injected loopback cookie, but no client credentials
+  const proxiedUnauthReq = {
+    headers: {
+      host: '127.0.0.1:3000',
+      'sec-fetch-site': 'same-origin',
+      origin: 'http://127.0.0.1:3000',
+      'x-forwarded-for': '192.168.1.55',
+      cookie: `${loopCookie}=minted_loopback_session`,
+    },
+    socket: { remoteAddress: '127.0.0.1' },
+  }
+  // Even if connection.requestRejection returns undefined (fooled by injected loopback cookie):
+  const mockConn = { requestRejection: () => undefined }
+  assert.equal(getRejectionStatus(proxiedUnauthReq, { connection: mockConn }), 401)
+  assert.equal(isTrustedRequest(proxiedUnauthReq, { connection: mockConn }), false)
+
+  // Proxied with client credentials
+  const proxiedAuthReq = {
+    headers: {
+      host: '127.0.0.1:3000',
+      'sec-fetch-site': 'same-origin',
+      origin: 'http://127.0.0.1:3000',
+      'x-forwarded-for': '192.168.1.55',
+      cookie: `${loopCookie}=minted_loopback_session; ${lanCookie}=real_client_session`,
+    },
+    socket: { remoteAddress: '127.0.0.1' },
+  }
+  assert.equal(getRejectionStatus(proxiedAuthReq, { connection: mockConn }), undefined)
+  assert.equal(isTrustedRequest(proxiedAuthReq, { connection: mockConn }), true)
 })
