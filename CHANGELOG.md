@@ -2,6 +2,22 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.33
+
+### Added
+- **Interactive Live Steering (Nudge) of Active Agent (#373)**:
+  - Added interactive steering button (`💬 Nudge`) on kanban cards for tasks in `in-progress` column with active agent sessions.
+  - Implemented interactive Nudge modal allowing operators to provide prompts, clarifications, and course corrections directly to the running agent.
+  - Implemented `handleTaskNudge` endpoint (`POST /dsh-kanban/task/:id` with action `nudge`) routing prompts to active sessions via `agent.followup` conforming to DSH session format v4 (`source.kind: 'dsh-kanban'`, `source.form: 'task-nudge'`).
+  - Recorded steering prompts as user comments with `[Steering Nudge]` prefix for full auditability, and broadcasted updates via `eventHub`.
+  - Added real-time agent execution step telemetry (`task.liveStep`) displaying active operations directly on task cards.
+
+- **Token & Cost Telemetry via @goodandready/dsh-cost-meter (#374)**:
+  - Integrated token and cost telemetry with `@goodandready/dsh-cost-meter` using zero-coupling dynamic service discovery (`isCostMeterAvailable`), ensuring clean fail-soft behavior when the cost meter plugin is absent.
+  - Created `lib/cost-telemetry.js` providing session token usage extraction (`extractSessionUsage`) across models and slot buckets, token cost calculations (`calculateTokenCost`) with support for custom rate schedules and currencies, and budget limit checks (`checkCostLimit`).
+  - Added configuration options `costMeterEnabled` and `taskCostLimit` (USD), persisting cost metrics (`costMetrics`, `costLimitExceeded`) on tasks in SQLite store.
+  - Added token and cost badges (`🪙 1.5k · $0.21`) and budget limit warning indicators (`⚠️ Budget Exceeded`) on kanban cards, along with detailed token breakdowns (Tokens, Input, Output, Cache) in task modals and settings.
+
 ## 0.2.32
 
 ### Added
