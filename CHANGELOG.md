@@ -2,6 +2,18 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.30
+
+### Fixed
+- **LAN Authentication Bypass & Critical Endpoint Fencing (#384)**:
+  - Eliminated authentication bypass where LAN clients forging `Sec-Fetch-Site: same-origin` or without credentials could reach `/dsh-kanban/batch` to execute agent sessions with arbitrary prompt text, as well as read session lists and mutate project tasks.
+  - Implemented `getRejectionStatus(req, options)` and `rejectUntrustedRequest(req, res, options)` in `lib/routes.js`, integrating DSH session authentication via `ctx.connection.requestRejection(req)`.
+  - Non-loopback calls (including LAN and remote IP addresses) require valid DSH session authentication; unauthenticated requests fail-closed with HTTP 401 Unauthorized.
+  - Socket calls with unknown remote addresses fail-closed with HTTP 403 Forbidden.
+  - Fenced all 19 plugin HTTP endpoints and the SSE events stream with dynamic connection resolution.
+  - Added connection session verification to `lib/updater.js`.
+  - Updated Request Trust Policy in `docs/design/DESIGN.md` and added test coverage in `test/routes.test.mjs` and `test/index-load.test.mjs`.
+
 ## 0.2.29
 
 ### Fixed
