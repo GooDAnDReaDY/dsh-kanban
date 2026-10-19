@@ -120,12 +120,15 @@
 - **Страховочный бэкап при импорте снимка**: `importBoard` в `/dsh-kanban/snapshot` автоматически делает снимок базы SQLite в `backups/kanban-backup-<timestamp>.db` с ротацией последних 10 копий перед перезаписью данных.
 
 
-### Security & Request Trust Policy (#261)
-- **isTrustedRequest**: Все изменяющие POST-эндпоинты (`/project-task`, `/batch`, `/sync`, `/snapshot`, `/task/:id/*`) защищены строгой проверкой:
-  1. Обязательный заголовок `sec-fetch-site` со значением `same-origin`, `same-site` или `none`. Запросы без заголовка или с `cross-site` отклоняются со статусом 403.
-  2. Валидация заголовка `Origin` против `Host`: при несовпадении или значении `null` возвращается 403.
-  3. Проверка `remoteAddress`: внешние сетевые адреса, отличные от loopback (`127.0.0.1`, `::1`), отклоняются.
-- **Входящий вебхук (`/dsh-kanban/webhook`)**: Защищен криптографической HMAC-подписью `x-gitea-signature` с общим секретом (`secret`), а не происхождением Origin/sec-fetch-site, поскольку запросы вебхука инициируются сервером Gitea снаружи по отношению к браузерной сессии пользователя.
+### Security & Request Trust Policy (#261, #369, #384)
+- **isTrustedRequest & getRejectionStatus**: Все HTTP-маршруты плагина (`/project-task`, `/batch`, `/sessions`, `/sync`, `/snapshot`, `/task/*`, `/presets`, `/archive`, `/board`, `/whoami`, `/export.csv`, `/templates`, `/metrics`, `/models`, `/session/*`, `/gitea/*`) защищены многоуровневым периметром безопасности:
+  1. **Сессионная аутентификация DSH (`connection.requestRejection`)**: Для любых не-loopback (LAN и удалённых) вызовов обязательна проверка через `ctx.connection.requestRejection(req)`. При отсутствии активной сессии DSH запросы отклоняются с HTTP 401 (`unauthorized`). Неизвестный remoteAddress обрабатывается fail-closed со статусом 403.
+  2. **Защита от DNS-rebinding (`isTrustedHost`)**: Заголовок `Host` обязателен и должен указывать на доверенный хост (loopback, LAN, `.local`).
+  3. **Защита от CSRF и подделки Origin/Referer**:
+     - `sec-fetch-site`: значения `cross-site` и `other` немедленно отклоняются с кодом 403. Разрешены только `same-origin` и `none` (а также `same-site` для безопасных переходов).
+     - `Origin` и `Referer` (при наличии) обязаны соответствовать доверенному хосту и заголовку `Host`. Значение `null` отклоняется с 403.
+  4. **Автономный / тестовый режим**: При отсутствии службы `connection` (юнит-тесты без харнесса, локальные CLI-вызовы) разрешены исключительно локальные loopback-адреса (`127.0.0.1`, `::1`). Любые LAN/внешние клиенты без `connection` отклоняются с кодом 401 (fail-closed).
+- **Входящий вебхук (`/dsh-kanban/webhook`)**: Защищен криптографической HMAC-подписью `x-gitea-signature` / `x-hub-signature-256` с общим секретом (`secret`), а не происхождением Origin/sec-fetch-site, поскольку запросы вебхука инициируются сервером Git Forge снаружи по отношению к браузерной сессии пользователя.
 
 
 ### Client Injection Policy (#265)
