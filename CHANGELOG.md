@@ -2,6 +2,17 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.31
+
+### Fixed
+- **Reverse Proxy Boundary Fencing & Client Credentials Enforcement (#384)**:
+  - Closed critical authentication bypass when requests are forwarded through reverse proxies (e.g. `dsh-lanmode` on port 3080) to the backend web server on loopback (`127.0.0.1:3000`).
+  - Added `connection` to `export const inject` in `lib/index.js` so Cordis properly provides the DSH connection service to the plugin.
+  - Enhanced `getClientIp(req)` to extract the real client IP from `x-forwarded-for` when the incoming socket is on a loopback address.
+  - Implemented `hasClientCredentials(req)` to detect genuine client-supplied credentials (Bearer token, `x-dsh-lan-pin`, PIN cookies `dsh_lan_pin`/`dsh_token`, or client authority cookies `dsh-auth-*`), rejecting requests that only carry reverse-proxy injected loopback cookies.
+  - Enforced client credential verification in `getRejectionStatus` (`lib/routes.js`) and `isTrustedUpdateRequest` (`lib/updater.js`).
+  - Added unit and integration tests verifying 401 rejection on proxied requests without client credentials for `/batch`, `/sessions`, `/project-task`, and updater routes.
+
 ## 0.2.30
 
 ### Fixed
