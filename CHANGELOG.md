@@ -2,6 +2,21 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.32
+
+### Added
+- **Automated Verification Gate on Review (#372)**:
+  - Added configurable automated verification gate (`verificationGateEnabled: true`, `verificationCommand: 'npm test'`, `verificationTimeoutMs: 120000`) executed prior to transitioning tasks to `review`.
+  - Blocks manual UI column moves and `board_move` agent tool invocations if test commands fail (HTTP 422 Unprocessable Entity), preventing broken code from advancing to review.
+  - Automatically posts verification failure diagnostics directly to active agent sessions via `agent.followup` (`source.kind: 'dsh-kanban'`, `source.form: 'verification-failure'`) with command exit code and truncated error logs.
+  - Displays dynamic `✓ PASS` / `✗ FAIL` status badges on task cards and failure inspection blocks in the task detail modal.
+  - Added per-task command override support via `verificationCommand` attribute in `tasks` table.
+
+- **Worktree Diff Inspector & Granular File Discard (#371)**:
+  - Enhanced `GET /task/:id/diff` endpoint with structured inspection data: changed files list with status indicators (`modified`, `added`, `deleted`, `untracked`), line change counts (`+insertions / -deletions` via `git diff --numstat`), and truncated diff payload (500 KB limit).
+  - Added `POST /task/:id/discard` endpoint enabling safe, granular file reverts: tracked files are restored via `git restore` and `git checkout`, while untracked files are pruned with strict path-traversal fencing.
+  - Built interactive Diff Inspector section in task modal with file status pills, line change indicators, per-file discard button with confirmation prompt, and collapsible unified diff viewer.
+
 ## 0.2.31
 
 ### Fixed
