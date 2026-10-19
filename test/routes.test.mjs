@@ -4,7 +4,8 @@ import { freshStore } from './helpers.mjs'
 import { withDefaults } from '../lib/config.js'
 import {
   buildBoard, applyMove, createTask, updateTask, deleteTask, taskLog,
-  taskBySession, isTrustedRequest, parseTaskPath, exportBoard, importBoard,
+  taskBySession, isTrustedRequest, getRejectionStatus, rejectUntrustedRequest,
+  getClientIp, parseTaskPath, exportBoard, importBoard,
   isLoopbackAddress, isLanAddress, isTrustedHost,
 } from '../lib/routes.js'
 
@@ -330,7 +331,7 @@ test('DNS-rebinding и поддельный origin отклоняются (isTru
     socket: { remoteAddress: '127.0.0.1' },
   }), false)
 
-  // Legitimate LAN browser request with same-origin
+  // Unauthenticated LAN browser request without connection is rejected (#384)
   assert.equal(isTrustedRequest({
     headers: {
       host: '192.168.1.111:3000',
@@ -338,9 +339,19 @@ test('DNS-rebinding и поддельный origin отклоняются (isTru
       origin: 'http://192.168.1.111:3000',
     },
     socket: { remoteAddress: '192.168.1.50' },
-  }), true)
+  }), false)
 
-  // Legitimate .local browser request
+  // Authenticated LAN browser request with connection service allowed (#384)
+  assert.equal(isTrustedRequest({
+    headers: {
+      host: '192.168.1.111:3000',
+      'sec-fetch-site': 'same-origin',
+      origin: 'http://192.168.1.111:3000',
+    },
+    socket: { remoteAddress: '192.168.1.50' },
+  }, { connection: { requestRejection: () => undefined } }), true)
+
+  // Unauthenticated .local browser request without connection is rejected (#384)
   assert.equal(isTrustedRequest({
     headers: {
       host: 'minipc.local:3000',
@@ -348,7 +359,17 @@ test('DNS-rebinding и поддельный origin отклоняются (isTru
       origin: 'http://minipc.local:3000',
     },
     socket: { remoteAddress: '192.168.1.50' },
-  }), true)
+  }), false)
+
+  // Authenticated .local browser request with connection service allowed (#384)
+  assert.equal(isTrustedRequest({
+    headers: {
+      host: 'minipc.local:3000',
+      'sec-fetch-site': 'same-origin',
+      origin: 'http://minipc.local:3000',
+    },
+    socket: { remoteAddress: '192.168.1.50' },
+  }, { connection: { requestRejection: () => undefined } }), true)
 
   // Legitimate IPv6 loopback
   assert.equal(isTrustedRequest({
@@ -438,3 +459,82 @@ test('все зарегистрированные маршруты имеют у
   assert.deepEqual(duplicates, [], 'найдены повторяющиеся пути маршрутов: ' + duplicates.join(', '))
 })
 
+
+test('аутентификация через connection.requestRejection защищает LAN-запросы (#384)', () => {
+  const lanReq = {
+    headers: {
+      host: '192.168.1.111:3000',
+      'sec-fetch-site': 'same-origin',
+      origin: 'http://192.168.1.111:3000',
+    },
+    socket: { remoteAddress: '192.168.1.50' },
+  }
+
+  // 1. LAN без connection -> 401
+  assert.equal(getRejectionStatus(lanReq), 401)
+  assert.equal(isTrustedRequest(lanReq), false)
+
+  // 2. LAN с connection, возвращающим 401 -> 401
+  const unauthConn = { connection: { requestRejection: () => 401 } }
+  assert.equal(getRejectionStatus(lanReq, unauthConn), 401)
+  assert.equal(isTrustedRequest(lanReq, unauthConn), false)
+
+  // 3. LAN с connection, возвращающим 403 -> 403
+  const forbidConn = { connection: { requestRejection: () => 403 } }
+  assert.equal(getRejectionStatus(lanReq, forbidConn), 403)
+  assert.equal(isTrustedRequest(lanReq, forbidConn), false)
+
+  // 4. LAN с упавшим connection -> 403 (fail closed)
+  const throwConn = { connection: { requestRejection: () => { throw new Error('boom') } } }
+  assert.equal(getRejectionStatus(lanReq, throwConn), 403)
+  assert.equal(isTrustedRequest(lanReq, throwConn), false)
+
+  // 5. LAN с успешной аутентификацией (undefined) -> undefined (allowed)
+  const authConn = { connection: { requestRejection: () => undefined } }
+  assert.equal(getRejectionStatus(lanReq, authConn), undefined)
+  assert.equal(isTrustedRequest(lanReq, authConn), true)
+
+  // 6. Loopback без connection разрешается для локальных скриптов и тестов
+  const loopReq = {
+    headers: {
+      host: '127.0.0.1:3000',
+      'sec-fetch-site': 'same-origin',
+      origin: 'http://127.0.0.1:3000',
+    },
+    socket: { remoteAddress: '127.0.0.1' },
+  }
+  assert.equal(getRejectionStatus(loopReq), undefined)
+  assert.equal(isTrustedRequest(loopReq), true)
+
+  // 7. rejectUntrustedRequest отклоняет неавторизованный запрос со статусом 401
+  let statusCode = null
+  let bodyPayload = null
+  const res401 = {
+    writeHead(code) { statusCode = code },
+    end(data) { bodyPayload = JSON.parse(data) },
+  }
+  assert.equal(rejectUntrustedRequest(lanReq, res401), true)
+  assert.equal(statusCode, 401)
+  assert.equal(bodyPayload.error, 'unauthorized')
+
+  // 8. rejectUntrustedRequest отклоняет cross-site запрос со статусом 403
+  const crossReq = {
+    headers: {
+      host: '127.0.0.1:3000',
+      'sec-fetch-site': 'cross-site',
+    },
+    socket: { remoteAddress: '127.0.0.1' },
+  }
+  let crossStatus = null
+  let crossBody = null
+  const res403 = {
+    writeHead(code) { crossStatus = code },
+    end(data) { crossBody = JSON.parse(data) },
+  }
+  assert.equal(rejectUntrustedRequest(crossReq, res403), true)
+  assert.equal(crossStatus, 403)
+  assert.equal(crossBody.error, 'cross-site')
+
+  // 9. rejectUntrustedRequest пропускает доверенный запрос
+  assert.equal(rejectUntrustedRequest(lanReq, {}, authConn), false)
+})

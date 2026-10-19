@@ -632,3 +632,115 @@ test('маршруты чтения отклоняют untrusted/cross-site за
     assert.ok(responseBody && responseBody.includes('cross-site'), 'Action must return cross-site error: ' + action)
   }
 })
+
+test('LAN-клиент без аутентификации получает 401 на эндпоинтах (/batch, /sessions, /project-task, /sync) (#384)', async () => {
+  const { Readable } = await import('node:stream')
+  const mod = await import('../lib/index.js')
+  const registeredRoutes = new Map()
+
+  let connectionStatus = 401
+  const mockCtx = {
+    inject(deps, fn) {
+      fn({
+        settings: {
+          register: () => ({ get: () => ({}), watch: () => {} }),
+        },
+      })
+    },
+    effect(fn) {
+      return fn()
+    },
+    on() {},
+    get(name) {
+      if (name === 'connection') {
+        return {
+          requestRejection: () => connectionStatus,
+        }
+      }
+      return null
+    },
+    credentials: {
+      resolve: async () => ({ value: 'test' }),
+    },
+    webServer: {
+      use() {},
+      register(route) {
+        registeredRoutes.set(route.path, route)
+      },
+    },
+    agents: {
+      get() { return null },
+    },
+    logger: {
+      warn() {},
+      info() {},
+      error() {},
+    },
+  }
+
+  mod.apply(mockCtx, {})
+
+  const testEndpoints = [
+    { path: '/dsh-kanban/sessions', method: 'GET' },
+    { path: '/dsh-kanban/batch', method: 'POST', body: '{}' },
+    { path: '/dsh-kanban/project-task', method: 'POST', body: '{}' },
+    { path: '/dsh-kanban/sync', method: 'POST', body: '{}' },
+    { path: '/dsh-kanban/archive', method: 'GET' },
+    { path: '/dsh-kanban/board', method: 'GET' },
+  ]
+
+  for (const ep of testEndpoints) {
+    const route = registeredRoutes.get(ep.path)
+    assert.ok(route, 'Route must be registered: ' + ep.path)
+
+    connectionStatus = 401
+    const req = new Readable({
+      read() {
+        if (ep.body) this.push(Buffer.from(ep.body))
+        this.push(null)
+      },
+    })
+    req.method = ep.method
+    req.url = ep.path
+    req.headers = {
+      host: '192.168.1.111:3000',
+      'sec-fetch-site': 'same-origin',
+      origin: 'http://192.168.1.111:3000',
+      'content-type': 'application/json',
+    }
+    req.socket = { remoteAddress: '192.168.1.50' }
+
+    let status = null
+    let responseBody = null
+    const res = {
+      writeHead(code, headers) { status = code },
+      end(data) { responseBody = data },
+    }
+
+    await route.handler(req, res)
+    assert.equal(status, 401, 'Endpoint must reject unauthenticated LAN request with 401: ' + ep.path)
+    assert.ok(responseBody && responseBody.includes('unauthorized'), 'Endpoint must return unauthorized error: ' + ep.path)
+  }
+
+  const sessionsRoute = registeredRoutes.get('/dsh-kanban/sessions')
+  connectionStatus = undefined
+  const authedReq = new Readable({ read() { this.push(null) } })
+  authedReq.method = 'GET'
+  authedReq.url = '/dsh-kanban/sessions'
+  authedReq.headers = {
+    host: '192.168.1.111:3000',
+    'sec-fetch-site': 'same-origin',
+    origin: 'http://192.168.1.111:3000',
+  }
+  authedReq.socket = { remoteAddress: '192.168.1.50' }
+
+  let authedStatus = null
+  let authedBody = null
+  const authedRes = {
+    writeHead(code) { authedStatus = code },
+    end(data) { authedBody = data },
+  }
+  await sessionsRoute.handler(authedReq, authedRes)
+  assert.equal(authedStatus, 200, 'Authenticated LAN request must succeed on /dsh-kanban/sessions')
+  assert.ok(authedBody && authedBody.includes('sessions'))
+})
