@@ -2,6 +2,18 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.34
+
+### Added
+- **Remote Mode for PC Client Operating Against Server 111 (#390)**:
+  - Enabled full seamless operation of DSH Kanban when running on Windows PC client desktop against server 111 (`/mnt/external/Project/DEV/**`), matching the behavior of running directly on the Linux server.
+  - Implemented remote DSH server HTTP relay (`lib/remote-relay.js`): transparently intercepts `/dsh-kanban/board` requests on PC client and proxies board state, cards, and transitions to server 111 over HTTP with bearer authentication and cookies.
+  - Implemented remote SSH Git runner (`lib/remote-runner.js`): executes worktree operations (`createTaskWorktree`, `checkWorktreeDirty`, `mergeTaskWorktree`, `cleanupTaskWorktree`, file diff, and file discard) on server 111 via SSH with POSIX-escaped command wrapping and optional `sudo -u <user>` execution.
+  - Added remote worktree path handling (`lib/worktree.js`) resolving paths to POSIX `/mnt/external/Project/DEV/.worktrees` without Windows backslash corruption, and safe worktree existence validation over SSH.
+  - Added 10 remote configuration options (`lib/config.js`): `remoteMode`, `remoteHost`, `remotePort`, `remoteUser`, `remoteAuthType`, `remoteKeyPath`, `remoteSudoUser`, `remoteRoot`, `remoteServerUrl`, and `remoteServerToken`.
+  - Added UI remote controls (`lib/client.js`): Settings Card Remote Execution section with "Test Connection" button testing both SSH connectivity and DSH Server API responsiveness via `/api/dsh-kanban/remote/test`, visual `🌐 Remote: 111` tag in board header, and remote chat session launcher.
+  - Preserved 100% backward compatibility: when `remoteMode: false` (default), local execution paths are completely unchanged.
+
 ## 0.2.33
 
 ### Added
