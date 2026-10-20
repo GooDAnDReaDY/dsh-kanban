@@ -243,3 +243,21 @@
   Модуль `lib/cost-telemetry.js` извлекает статистику использования токенов из проекции сессий (`extractSessionUsage`), агрегируя кэшированный ввод, исходящие токены и кэш-хиты по всем задействованным моделям. Стоимость рассчитывается (`calculateTokenCost`) на базе тарифной сетки (включая стандартную шкалу DeepSeek и кастомные тарифы) с конвертацией валют и форматированием (`$0.42`, `₽38.50`).
 - **Budget Limits & UI Highlights**:
   В настройках плагина предусмотрены параметры `costMeterEnabled` и `taskCostLimit` (USD). При превышении лимита на карточке появляется предупреждающий бейдж `⚠️ Budget Exceeded`, а в модальном окне задачи отображается подробная разбивка по типам токенов (Tokens, Input, Output, Cache) и итоговой стоимости.
+
+### Remote Mode for PC (Windows -> Server 111) (#390)
+- **Unified Remote Experience**:
+  Allows DSH Kanban running on a local Windows PC desktop client to operate seamlessly against server 111 projects, worktrees, and sessions identically to running directly on the Linux server.
+- **Shared Board State Relay**:
+  - `shouldRelay(config)` automatically intercepts `/dsh-kanban/board` on the local instance and relays requests to `config.remoteServerUrl` (default: `http://192.168.1.111:3080`).
+  - Request headers carry Bearer token and `dsh_token` cookie when `config.remoteServerToken` is configured.
+  - Fail-soft fallback returns standard HTTP 503 (`remote-server-unavailable`) on network disconnect without crashes.
+- **Remote Git & Worktree Execution over SSH**:
+  - `createRemoteGitRunner(config)` wraps Git operations via SSH using `remoteHost`, `remotePort`, `remoteUser`, `remoteKeyPath`, and POSIX-quoted `sudo -u <remoteSudoUser> -H bash -c '...'`.
+  - Remote path resolution (`resolveTaskWorktreePath`) enforces POSIX forward slashes `/` under `config.remoteRoot` (e.g. `/mnt/external/Project/DEV/.worktrees`), preventing Windows backslash corruption.
+  - `safeWorktreeExists` utilizes remote `git rev-parse --is-inside-work-tree` checks instead of local filesystem `fs.existsSync`.
+- **UI Surfaces**:
+  - **Remote Connection Test**: `RemoteConnectionSection` in Settings Card with "Test Connection" button testing both SSH connectivity and DSH Server API responsiveness via `/api/dsh-kanban/remote/test`.
+  - **Board Header Badge**: Visual `🌐 Remote: 111` tag in board header when `remoteMode: true`.
+  - **Remote Session Opening**: `onOpenChat` automatically redirects or opens remote chat sessions (`http://192.168.1.111:3080/#/chat?sessionId=...`) in browser when in remote mode.
+- **Backward Compatibility**:
+  - Default `remoteMode: false` maintains 100% existing local execution paths and performance.
