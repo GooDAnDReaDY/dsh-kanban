@@ -2,6 +2,24 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.37
+
+### Added
+- **Technical Specification & Implementation Plan Generator for Backlog Tasks (#376)**:
+  - Created `lib/plan-generator.js` with pure rule-based AI heuristic engine: `inferScope`, `inferCandidateFiles`, `generateTechnicalSpec`, `extractPlanItems`, `parseSpecMarkdown`, and `formatPlanPrompt`.
+  - Added HTTP endpoint `POST /dsh-kanban/task/:id/generate-plan` to analyze task requirements and generate technical specs, architectural constraints, and step-by-step checklist plans.
+  - Added database persistence for `spec` and structured `plan` in `lib/store.js`.
+  - Integrated plan injection into `lib/launcher.js`: agent session startup automatically appends the approved specification and checklist to the initial prompt.
+  - Added Task Modal UI card in `lib/client.js` with "Generate Plan" action, collapsible markdown preview, and inline editor for modifying technical specs before launch.
+  - Added comprehensive test suite in `test/plan-generator.test.mjs`.
+
+- **Automated PR Description & Release Notes Generator (#379)**:
+  - Created `lib/pr-generator.js` for synthesizing structured pull request descriptions: `parseGitLog`, `parseDiffStat`, `inferPrType`, `generatePrTitle`, `generatePrDescription`, and `generateReleaseNotes`.
+  - Added HTTP endpoint `POST /dsh-kanban/task/:id/pr-description` to parse git commits, diff stats, and issue context into conventional PR descriptions and release notes.
+  - Persisted `prDescription` in task database records.
+  - Added Task Modal UI card in `lib/client.js` with "Generate PR" action, pre-formatted markdown viewer, "Copy Markdown" clipboard action, and direct Gitea PR creation button.
+  - Added unit test suite in `test/pr-generator.test.mjs`.
+
 ## 0.2.36
 
 ### Added
