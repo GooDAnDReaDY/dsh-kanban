@@ -293,3 +293,37 @@
   - Cards in the stalled state display a prominent visual warning indicator (`⚠️ Stalled` tag and amber accent border).
   - The task details panel displays an alert box with the diagnostic reason and a dedicated `↻ Resume` action.
   - Resuming a task clears the stalled flag and error count, restarts or attaches the agent session, and logs the resumption.
+
+
+### Task Dependency Graph (DAG) with Auto-Unblocking (#375)
+- **Dependency Model & Cycle Prevention**:
+  - Tasks support a `blockedBy` list containing IDs of prerequisite tasks.
+  - Reverse mapping (`blocks`) is computed dynamically in `computeBlocksMap(tasks)`.
+  - Adding dependencies is strictly validated against direct self-loops ($A \to A$) and cyclic dependency paths ($A \to B \to A$) using DFS reachability checks (`validateDependencies(taskId, blockedBy, getTask)`). Cycles are rejected with an explicit validation error.
+- **Strict Transition Gate**:
+  - Tasks with unfinished blockers (any task in `blockedBy` whose column is not `done`) cannot transition to `in-progress`.
+  - Both UI (`applyMove`), HTTP endpoints (`/task/:id/move`), and agent tools (`board_move`) enforce this gate, returning HTTP 400 (`task-blocked`).
+- **Auto-Unblocking**:
+  - When a task transitions to `done`, `findUnblockedDependents(store, completedTaskId)` automatically identifies tasks whose last remaining blocker has been resolved.
+  - Unblocked tasks are marked with `isBlocked: false` and broadcast to connected clients via SSE (`task:unblocked` / `task:change`).
+- **UI Surfaces**:
+  - Cards with unresolved blockers display a prominent `🔒 Blocked` badge and receive visual shading (`.dkb-blocked`).
+  - Cards that block other tasks display a `⛔ Blocks (N)` indicator.
+  - The Task modal features a dedicated Dependencies section with blocker tags, removal buttons, and a selector to add prerequisite tasks.
+  - An alert banner warns users when attempting to start a blocked task.
+
+### Time Machine Snapshots & Instant Rollback Integration (#377)
+- **Zero-Coupling Dynamic Cordis Discovery**:
+  - Integrates dynamically with `@goodandready/dsh-time-machine` via Cordis service detection (`getTimeMachineEngine(ctx)`).
+  - Works without hard runtime dependencies: gracefully degrades with clear UI notices if the plugin is not installed in the DSH profile.
+- **Lifecycle Inception Checkpoints**:
+  - When a task transitions into `in-progress`, an inception snapshot is automatically captured (`createTaskInceptionSnapshot`) if `timeMachineAutoSnapshot` is enabled (default).
+  - The snapshot ID is persisted in the task record (`task.inceptionSnapshotId`).
+- **Manual Checkpoints & Rollback**:
+  - Developers can trigger manual checkpoints anytime via `/task/:id/snapshot`.
+  - Instant rollback (`/task/:id/rollback-snapshot`) restores the task's worktree to the inception state or any specified checkpoint, safely discarding drifted uncommitted changes.
+- **Audit Logging**:
+  - All snapshot creations and rollbacks are recorded in the task's transition journal (`source: 'time-machine'`).
+- **UI Surfaces**:
+  - Settings Card includes `timeMachineEnabled` and `timeMachineAutoSnapshot` configuration toggles, with an informative callout about `@goodandready/dsh-time-machine`.
+  - Task Modal features a "Time Machine Snapshots" section displaying the inception snapshot ID, a "Create Checkpoint" action, and a "Rollback to Inception" action with confirmation dialog.
