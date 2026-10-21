@@ -327,3 +327,22 @@
 - **UI Surfaces**:
   - Settings Card includes `timeMachineEnabled` and `timeMachineAutoSnapshot` configuration toggles, with an informative callout about `@goodandready/dsh-time-machine`.
   - Task Modal features a "Time Machine Snapshots" section displaying the inception snapshot ID, a "Create Checkpoint" action, and a "Rollback to Inception" action with confirmation dialog.
+
+### Technical Specification & Plan Generator for Backlog Tasks (#376)
+- **Rule-Based Heuristic Analysis**:
+  - `lib/plan-generator.js` inspects task title, description, and issue context to automatically determine technical scope, complexity class, affected system files, and required architectural constraints.
+  - Formulates a standardized specification adhering to the DSH plugin documentation and architectural guidelines.
+  - Extracts an ordered checklist of sub-milestones (`extractPlanItems`) and initializes `task.plan` with step-by-step progress tracking.
+- **Agent Initialization Injection**:
+  - When the agent session launches via `lib/launcher.js`, the approved technical specification and DoD checklist are injected into the start message (`buildStartMessage`), ensuring strict plan alignment from the first prompt.
+- **UI Surfaces**:
+  - Backlog cards in the Task Modal feature a dedicated "Technical Specification & Plan" section.
+  - Provides a one-click "Generate Plan" button, live markdown spec preview, and inline editor allowing human-in-the-loop adjustments before execution.
+
+### Automated PR Description & Release Notes Generator (#379)
+- **Git Commit & Diff Stat Synthesis**:
+  - `lib/pr-generator.js` inspects the worktree git log (`git log --oneline base..HEAD`) and diff stat (`git diff --stat base..HEAD`) to synthesize pull request titles and descriptions adhering to Conventional Commits.
+  - Detects change scope, primary files touched, and generates detailed summary bullets, verification evidence sections, and clean release notes.
+- **One-Click Review & Gitea PR Creation**:
+  - Endpoint `POST /dsh-kanban/task/:id/pr-description` compiles and caches the PR description in `task.prDescription`.
+  - UI in the Task Modal displays the generated PR markdown, provides an instant "Copy Markdown" button for clipboard export, and enables direct Gitea PR creation via `POST /dsh-kanban/task/:id/create-pr`.
