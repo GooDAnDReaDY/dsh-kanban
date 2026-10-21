@@ -2,6 +2,27 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.36
+
+### Added
+- **Task Dependency Graph (DAG) with Auto-Unblocking (#375)**:
+  - Added DAG dependency tracking via `blockedBy` field on tasks with cycle detection (`lib/dependencies.js`).
+  - Prevented circular dependencies using DFS reachability check: rejects self-loops and circular graphs (A -> B -> A) with validation errors.
+  - Added transition gate in `lib/routes/task.js` and `lib/board-tool.js`: blocks transitions to `in-progress` if any blocker is not in `done` (returns 400 `task-blocked`).
+  - Added auto-unblocking logic: transitioning a blocker to `done` identifies dependents whose blockers are all completed and broadcasts SSE events.
+  - Added board enrichment: `computeBlocksMap` dynamically computes reverse `blocks` mapping and `isBlocked` flag for all cards on `/dsh-kanban/board`.
+  - Added UI elements in `lib/client.js`: `🔒 Blocked` badge, `⛔ Blocks (N)` tag, blocked warning banner in task modal, and dependency picker to add/remove blockers.
+  - Added comprehensive unit test suite in `test/dependencies.test.mjs`.
+
+- **Time Machine Snapshots & Instant Rollback Integration (#377)**:
+  - Integrated with `@goodandready/dsh-time-machine` via dynamic Cordis service discovery (`lib/time-machine.js`).
+  - Added auto-inception snapshot: automatically captures snapshot of task worktree upon moving to `in-progress` and stores `inceptionSnapshotId`.
+  - Added manual checkpointing and rollback HTTP endpoints: `/task/:id/snapshot` and `/task/:id/rollback-snapshot`.
+  - Added transition logging for snapshots and rollback operations (`source: 'time-machine'`).
+  - Added configuration options in `lib/config.js`: `timeMachineEnabled` and `timeMachineAutoSnapshot`.
+  - Added UI controls in `lib/client.js`: Time Machine section in Task modal with "Create Checkpoint" and "Rollback to Inception" actions, plus settings toggles and informational notice.
+  - Added comprehensive unit test suite in `test/time-machine.test.mjs`.
+
 ## 0.2.35
 
 ### Added
