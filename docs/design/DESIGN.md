@@ -261,3 +261,35 @@
   - **Remote Session Opening**: `onOpenChat` automatically redirects or opens remote chat sessions (`http://192.168.1.111:3080/#/chat?sessionId=...`) in browser when in remote mode.
 - **Backward Compatibility**:
   - Default `remoteMode: false` maintains 100% existing local execution paths and performance.
+
+
+### Domain Decomposition of lib/index.js and lib/routes.js (#389)
+- **Granular Domain Modularity**:
+  - `lib/routes.js` decomposed into domain modules under `lib/routes/`:
+    - `lib/routes/security.js`: authentication, request trust validation (`isTrustedRequest`, `rejectUntrustedRequest`), IP, cookie, and loopback guards.
+    - `lib/routes/board.js`: board state construction, board metrics, snapshot import/export, CSV export.
+    - `lib/routes/task.js`: task CRUD, move transition dispatch, permission gate, note appending, assignment, revival checks.
+    - `lib/routes/task-worktree.js`: worktree status, diff, commits, discard, merge, and cleanup handlers.
+    - `lib/routes/task-actions.js`: task checklist, subtasks, DoD items, PR creation, triage, nudging, comments, reports.
+    - `lib/routes.js` serves as a clean 72-line facade preserving 100% backward-compatible symbol exports.
+  - `lib/index.js` decomposed into server modules under `lib/server/`:
+    - `lib/server/route-handlers.js`: route handlers for exact/prefix endpoints (`/project-task`, `/presets`, `/sessions`, `/batch`, `/archive`, `/sync`, `/webhook`, `/board`, `/remote/test`, `/metrics`, `/whoami`, `/export.csv`, `/events`, `/templates`, `/snapshot`, `/gitea/*`, `/models`, `/session/*`).
+    - `lib/server/task-handler.js`: dedicated handler for the `/dsh-kanban/task` prefix route tree.
+    - `lib/server/timers.js`: periodic cron scheduling, Gitea/GitHub background sync, and outbound event queue.
+    - `lib/server/services.js`: system sleep inhibitor (`PowerInhibitor`), dynamic system prompt section injection, session event listener, and board tool registration.
+  - Every hand-written file in `lib/` strictly conforms to the size limit of <= 600 lines.
+
+### Watchdog Timer & Circuit Breaker for Stalled Agent Tasks (#378)
+- **Background Active Task Monitoring**:
+  - `WatchdogService` (`lib/watchdog.js`) actively tracks tasks in the `in-progress` column.
+  - Periodically checks for inactive tasks exceeding `watchdogStallTimeoutMin` (default: 15 minutes) without new turns, messages, or tool invocations.
+  - Detects repeated failure loops when consecutive execution errors reach `watchdogMaxConsecutiveErrors` (default: 5).
+- **Circuit Breaker Action**:
+  - When tripped, immediately aborts/pauses the active agent session to halt runaway token consumption and preserve quotas.
+  - Updates the task card state to `stalled: true` with a detailed diagnostic explanation (`stalledReason`, `stalledAt`).
+  - Records a diagnostic audit transition in the task journal (`source: 'watchdog'`).
+  - Broadcasts `task:change` (`action: 'stalled'`) to all connected clients via SSE.
+- **Manual Intervention & Task Resume**:
+  - Cards in the stalled state display a prominent visual warning indicator (`⚠️ Stalled` tag and amber accent border).
+  - The task details panel displays an alert box with the diagnostic reason and a dedicated `↻ Resume` action.
+  - Resuming a task clears the stalled flag and error count, restarts or attaches the agent session, and logs the resumption.
