@@ -346,3 +346,20 @@
 - **One-Click Review & Gitea PR Creation**:
   - Endpoint `POST /dsh-kanban/task/:id/pr-description` compiles and caches the PR description in `task.prDescription`.
   - UI in the Task Modal displays the generated PR markdown, provides an instant "Copy Markdown" button for clipboard export, and enables direct Gitea PR creation via `POST /dsh-kanban/task/:id/create-pr`.
+
+### Semantic Duplicate Task & Card Search Engine (#380)
+- **Multilingual Token & N-Gram Dice Engine**:
+  - `lib/similarity.js` implements a pure JavaScript similarity engine that blends word token overlap with character 3-grams for morphological tolerance across English, Russian, and Chinese.
+  - Computes composite similarity scores (title 70%, description 30%) with customizable threshold (default 40%).
+- **Duplicate Prevention Workflow**:
+  - Endpoint `POST /dsh-kanban/task/find-duplicates` queries all active board cards and returns ranked duplicates excluding the current card.
+  - Task Modal surfaces an alert banner (`⚠️ Similar tasks found`) showing matching task titles, issue numbers, and match percentages to prevent duplicate work.
+
+### Native Web Push Notifications & Web Audio Alerts (#381)
+- **Zero-Asset Sound Synthesizer**:
+  - `playAlertSound` generates dynamic audio waveforms directly using browser `AudioContext` (sine chimes for review/success, triangle tones for warnings/stalls) without external audio files.
+- **Desktop Push Notifications**:
+  - Integrates with HTML5 `Notification` API: dispatches background notifications when cards move to review, verification fails, or tasks stall.
+  - Clicking on a desktop notification focuses the browser window and opens the relevant task details drawer.
+- **Privacy & Opt-In Configuration**:
+  - Both notifications and sound alerts are opt-in and controlled via `notificationsEnabled` and `audioAlertsEnabled` settings.
