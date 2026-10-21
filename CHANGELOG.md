@@ -2,6 +2,21 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.38
+
+### Added
+- **Semantic Duplicate Task & Card Search Engine (#380)**:
+  - Created zero-dependency multilingual similarity engine in `lib/similarity.js`: `normalizeText`, `tokenizeWords`, `extractNgrams`, `diceCoefficient`, `jaccardIndex`, `calculateTextSimilarity`, `compareTasks`, and `findDuplicates`.
+  - Added HTTP endpoint `POST /dsh-kanban/task/find-duplicates` to query board tasks and identify duplicate or highly similar cards based on combined title and description scores.
+  - Added Task Modal UI warning banner in `lib/client.js` displaying similar tasks with match percentages and direct issue links, plus manual "Check Duplicates" action.
+  - Added test suite in `test/similarity.test.mjs` and `test/duplicate-route.test.mjs`.
+
+- **Native Web Push Notifications & Web Audio Alerts for Board Events (#381)**:
+  - Added configuration options `notificationsEnabled` and `audioAlertsEnabled` in `lib/config.js` and `lib/client.js`.
+  - Added HTML5 Desktop Notification dispatcher: notifies users when tasks are ready for review, fail automated verification, or stall due to inactivity.
+  - Added pure Web Audio API synthesizer (`playAlertSound`): generates synthesized dual-tone alerts without external mp3/wav audio assets.
+  - Added permission request button in UI header and settings checkboxes in `KanbanSettingsCard`.
+
 ## 0.2.37
 
 ### Added
