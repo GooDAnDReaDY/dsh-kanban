@@ -2,6 +2,37 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.35
+
+### Added
+- **Watchdog Timer & Circuit Breaker for Stalled Agent Tasks (#378)**:
+  - Implemented background `WatchdogService` (`lib/watchdog.js`) to prevent runaway token consumption and detect frozen agent sessions.
+  - Added inactivity monitoring: triggers circuit breaker when a task in `in-progress` has no activity for `watchdogStallTimeoutMin` minutes (default: 15m).
+  - Added consecutive error detection: triggers circuit breaker when an active task encounters `watchdogMaxConsecutiveErrors` consecutive execution errors (default: 5).
+  - Circuit Breaker pauses or aborts the agent session, sets `stalled: true` with diagnostic details on the task card, logs a transition with `source: 'watchdog'`, and broadcasts an SSE event.
+  - Added configuration options in `lib/config.js`: `watchdogEnabled`, `watchdogStallTimeoutMin`, and `watchdogMaxConsecutiveErrors`.
+  - Added visual indicators in `lib/client.js`: amber border highlight, `⚠️ Stalled` badge, diagnostic reason in modal, and manual `↻ Resume` button.
+  - Unit tests in `test/watchdog.test.mjs`.
+
+### Changed
+- **Domain Refactoring of `lib/index.js` and `lib/routes.js` (#389)**:
+  - Decomposed monolithic `lib/routes.js` (1207 lines) into specialized domain modules under `lib/routes/`: `security.js`, `board.js`, `task.js`, `task-worktree.js`, `task-actions.js`, with `lib/routes.js` acting as a clean 72-line facade.
+  - Decomposed monolithic `lib/index.js` (1638 lines) into server lifecycle modules under `lib/server/`: `route-handlers.js`, `task-handler.js`, `timers.js`, `services.js`.
+  - Main entry point `lib/index.js` reduced from 1638 lines to 493 lines.
+  - Hand-written files across `lib/` strictly conform to the architectural boundary of <= 600 lines.
+
+## 0.2.34
+
+### Added
+- **Remote Mode for PC Client Operating Against Server 111 (#390)**:
+  - Enabled full seamless operation of DSH Kanban when running on Windows PC client desktop against server 111 (`/mnt/external/Project/DEV/**`), matching the behavior of running directly on the Linux server.
+  - Implemented remote DSH server HTTP relay (`lib/remote-relay.js`): transparently intercepts `/dsh-kanban/board` requests on PC client and proxies board state, cards, and transitions to server 111 over HTTP with bearer authentication and cookies.
+  - Implemented remote SSH Git runner (`lib/remote-runner.js`): executes worktree operations (`createTaskWorktree`, `checkWorktreeDirty`, `mergeTaskWorktree`, `cleanupTaskWorktree`, file diff, and file discard) on server 111 via SSH with POSIX-escaped command wrapping and optional `sudo -u <user>` execution.
+  - Added remote worktree path handling (`lib/worktree.js`) resolving paths to POSIX `/mnt/external/Project/DEV/.worktrees` without Windows backslash corruption, and safe worktree existence validation over SSH.
+  - Added 10 remote configuration options (`lib/config.js`): `remoteMode`, `remoteHost`, `remotePort`, `remoteUser`, `remoteAuthType`, `remoteKeyPath`, `remoteSudoUser`, `remoteRoot`, `remoteServerUrl`, and `remoteServerToken`.
+  - Added UI remote controls (`lib/client.js`): Settings Card Remote Execution section with "Test Connection" button testing both SSH connectivity and DSH Server API responsiveness via `/api/dsh-kanban/remote/test`, visual `🌐 Remote: 111` tag in board header, and remote chat session launcher.
+  - Preserved 100% backward compatibility: when `remoteMode: false` (default), local execution paths are completely unchanged.
+
 ## 0.2.33
 
 ### Added
