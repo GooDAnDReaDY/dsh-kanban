@@ -2,6 +2,25 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.35
+
+### Added
+- **Watchdog Timer & Circuit Breaker for Stalled Agent Tasks (#378)**:
+  - Implemented background `WatchdogService` (`lib/watchdog.js`) to prevent runaway token consumption and detect frozen agent sessions.
+  - Added inactivity monitoring: triggers circuit breaker when a task in `in-progress` has no activity for `watchdogStallTimeoutMin` minutes (default: 15m).
+  - Added consecutive error detection: triggers circuit breaker when an active task encounters `watchdogMaxConsecutiveErrors` consecutive execution errors (default: 5).
+  - Circuit Breaker pauses or aborts the agent session, sets `stalled: true` with diagnostic details on the task card, logs a transition with `source: 'watchdog'`, and broadcasts an SSE event.
+  - Added configuration options in `lib/config.js`: `watchdogEnabled`, `watchdogStallTimeoutMin`, and `watchdogMaxConsecutiveErrors`.
+  - Added visual indicators in `lib/client.js`: amber border highlight, `⚠️ Stalled` badge, diagnostic reason in modal, and manual `↻ Resume` button.
+  - Unit tests in `test/watchdog.test.mjs`.
+
+### Changed
+- **Domain Refactoring of `lib/index.js` and `lib/routes.js` (#389)**:
+  - Decomposed monolithic `lib/routes.js` (1207 lines) into specialized domain modules under `lib/routes/`: `security.js`, `board.js`, `task.js`, `task-worktree.js`, `task-actions.js`, with `lib/routes.js` acting as a clean 72-line facade.
+  - Decomposed monolithic `lib/index.js` (1638 lines) into server lifecycle modules under `lib/server/`: `route-handlers.js`, `task-handler.js`, `timers.js`, `services.js`.
+  - Main entry point `lib/index.js` reduced from 1638 lines to 493 lines.
+  - Hand-written files across `lib/` strictly conform to the architectural boundary of <= 600 lines.
+
 ## 0.2.34
 
 ### Added
