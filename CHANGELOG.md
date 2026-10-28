@@ -2,7 +2,17 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.39
+
+### Fixed
+- **BoardScreen Component Initialization Crash (#396)**:
+  - Fixed `ReferenceError: Cannot access load before initialization` occurring when `BoardScreen` mounts in browser runtimes.
+  - Reordered hook declarations in `lib/client.js` so that `load` (and its mounting `useEffect`) is declared and initialized before `handleNudgeSubmit` and any callback referencing `load` in its dependency array.
+  - Exported `BoardScreen` in `helpers` to enable isolated component mount and lifecycle testing.
+  - Added regression test in `test/boardscreen-mount.test.mjs` verifying clean mount, dependency evaluation, and automatic initial board data fetch.
+
 ## 0.2.38
+
 
 ### Added
 - **Semantic Duplicate Task & Card Search Engine (#380)**:
