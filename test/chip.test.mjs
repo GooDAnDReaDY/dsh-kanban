@@ -93,3 +93,50 @@ test('доска по умолчанию — проектная', () => {
   toggle.show('t1')
   assert.equal(toggle.takeWanted().board, 'main')
 })
+
+// ------------------------------------------------- видимость чипа в шапке (#398)
+
+test('TaskChip: возвращает null, когда showHeaderChip = false (#398)', () => {
+  const { TaskChip } = exported.helpers
+  assert.equal(typeof TaskChip, 'function', 'TaskChip должен быть экспортирован в helpers')
+
+  const mockScopeDisabled = {
+    subscribe: () => () => {},
+    getSnapshot: () => ({ status: 'ready', value: { showHeaderChip: false } }),
+  }
+  const mockCtxDisabled = {
+    configForms: {
+      get: (ns) => (ns === 'dsh-kanban' ? mockScopeDisabled : undefined),
+    },
+    locale: { bind: () => (k) => k },
+  }
+
+  // При выключенной настройке TaskChip возвращает null независимо от наличия задачи
+  const out = TaskChip({
+    ctx: mockCtxDisabled,
+    sessionId: 'session-test-1',
+  })
+  assert.equal(out, null, 'TaskChip должен возвращать null при showHeaderChip: false')
+})
+
+test('TaskChip: остаётся активным по умолчанию (showHeaderChip не задан или true) (#398)', () => {
+  const { TaskChip } = exported.helpers
+
+  const mockScopeEnabled = {
+    subscribe: () => () => {},
+    getSnapshot: () => ({ status: 'ready', value: { showHeaderChip: true } }),
+  }
+  const mockCtxEnabled = {
+    configForms: {
+      get: (ns) => (ns === 'dsh-kanban' ? mockScopeEnabled : undefined),
+    },
+    locale: { bind: () => (k) => k },
+  }
+
+  // При пустой сессии возвращается null (нет задачи), но без падения
+  const out = TaskChip({
+    ctx: mockCtxEnabled,
+    sessionId: '',
+  })
+  assert.equal(out, null)
+})
