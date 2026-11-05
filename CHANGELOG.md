@@ -2,7 +2,18 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.40
+
+### Added
+- **Chat Header Task Indicator Visibility Toggle (#398)**:
+  - Added `showHeaderChip` boolean setting (default: `true`) in `lib/config.js` and `CONFIG_DEFAULTS` / `CONFIG_HINTS`.
+  - Added toggle control to Kanban settings card in `lib/client.js` with localized labels and hints in English and Chinese.
+  - Subscribed `TaskChip` component to settings scope via `configForms` so visibility updates reactively without reloading or restarting.
+  - Preserved primary Kanban navigation button, task tracking, board accessibility, and sidebar integration unchanged.
+  - Added unit tests in `test/chip.test.mjs` verifying default visibility and clean suppression when disabled.
+
 ## 0.2.39
+
 
 ### Fixed
 - **BoardScreen Component Initialization Crash (#396)**:
