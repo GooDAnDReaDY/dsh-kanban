@@ -33,7 +33,7 @@ test('npm pack stays within the DSH Store size limit and the publish allowlist (
   assert.ok(clientFile.size < 256000, `lib/client.js must stay below 250 KiB (got ${clientFile.size} bytes)`)
 
   const paths = files.map((f) => f.path)
-  for (const forbidden of ['AGENTS.md', 'index.md', '.env', 'pnpm-lock.yaml']) {
+  for (const forbidden of ['AGENTS.md', 'index.md', 'deploy.sh', 'package-lock.json', '.env', 'pnpm-lock.yaml']) {
     assert.ok(!paths.includes(forbidden), forbidden + ' must not be published')
   }
   for (const required of ['README.md', 'LICENSE', 'package.json', 'cordis.patch.yml', 'lib/index.js', 'lib/client.js']) {
