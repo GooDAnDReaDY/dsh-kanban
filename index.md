@@ -1,0 +1,23 @@
+# @goodandready/dsh-kanban
+
+- **Назначение**: полнофункциональная визуальная канбан-доска для DeepSeek Harness: поддержка задач Gitea и GitHub, рабочие колонки, DoD чек-листы верификации, назначение исполнителей, телеметрия токенов и расходов, и выделенная сессия агента на каждую задачу.
+- **Пакет**: `@goodandready/dsh-kanban`
+- **Версия**: `0.2.41`
+- **DEV**: `/mnt/external/Project/DEV/dhsplugins/dsh-kanban`
+- **OPT**: Каталога нет. Плагин устанавливается в профиль DSH (`~/.dsh/profiles/web`) пакетом из npm.
+- **Архитектура**:
+  - Host: `lib/index.js`, сервисы `lib/server/services.js`, маршруты `lib/server/route-handlers.js`, хранилище `lib/store.js`.
+  - Client: `lib/client.js` (монолитный бандл React UI, строгий порог размера < 250 KiB / 256 000 байт).
+  - Слот настроек: `settings.plugin.item`, ключ `@goodandready/dsh-kanban`.
+- **Команды проверки**:
+  - `npm test`: запуск полного набора тестов (`node --test test/*.test.mjs`).
+  - `npm run compat`: проверка совместимости импортов ядра с установленным профилем (`~/.dsh/profiles/web`).
+  - `npm audit --omit=dev`: аудит зависимостей (lockfile зафиксирован в репозитории).
+  - `bash /home/vadim/preflight.sh .`: проверка правил preflight перед релизом.
+- **Тестовая матрица**:
+  - `test/pack-size.test.mjs`: проверка размера пакета (< 256 KiB) и недопустимости служебных файлов (`AGENTS.md`, `index.md`, `deploy.sh`, `package-lock.json`, `.env`).
+  - `test/dead-exports.test.mjs`: проверка отсутствия мёртвых экспортов в `lib/`.
+  - `test/cost-telemetry.test.mjs`, `test/cost-metrics-corrupted.test.mjs`: проверка телеметрии токенов и безопасной обработки битых метрик.
+- **Deploy**:
+  - Штатный скрипт: `./deploy.sh` (проверка гейтов) и `./deploy.sh --install` (установка опубликованного npm-пакета в профиль web и рестарт `dsh-web.service`).
+  - Служебные файлы (`index.md`, `deploy.sh`, `AGENTS.md`, `package-lock.json`, `docs/`) исключены из npm-пакета через поле `files` в `package.json`.

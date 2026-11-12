@@ -2,6 +2,31 @@
 
 Notable changes to `@goodandready/dsh-kanban`.
 
+## 0.2.41
+
+### Fixed
+- **Empty Catch Blocks and Corrupted Telemetry Observability (#400)**:
+  - Fixed four empty `catch` blocks in `lib/store.js` and `lib/client.js` to ensure clean preflight execution.
+  - Added `corruptedCostMetricsCount` counter and safe fallback handling in `lib/store.js` when parsing `costMetrics` so corrupted telemetry records are tracked rather than silently dropped.
+  - Added unit test in `test/cost-metrics-corrupted.test.mjs` verifying counter increment and non-blocking task hydration.
+- **Dead Exports Elimination and Cost Telemetry Unification (#403)**:
+  - Eliminated dead exports across `lib/` by wiring `extractSessionUsage`, `calculateTokenCost`, and `checkCostLimit` into `lib/routes/board.js`, replacing duplicate inline budget calculation.
+  - Integrated `parseGitLog` and `parseDiffStat` in `lib/pr-generator.js` and `lib/routes/task-actions.js` for flexible string commit and diff parsing.
+  - Connected `remotePathExists` in `lib/remote-runner.js` and `lib/worktree.js` for remote workspace verification.
+  - Added regression test `test/dead-exports.test.mjs` running in CI to enforce all production exports have live callers.
+- **Stale Worktrees and Branches Cleanup (#402)**:
+  - Pruned and removed 7 stale merged worktrees and detached release branches (`feat-166-labels-priority`, `feat-167-due`, `feat-168-export`, `feat-169-notify`, `feat-255-task-provision-service`, `fix/dsh-kanban-config-forms`, and `release-main`).
+
+### Added
+- **Project Structure Map and Canonical Deployment Script (#401)**:
+  - Created `index.md` specifying project overview, DEV paths, test matrix, and verification commands.
+  - Created executable `deploy.sh` for canonical pre-deploy validation and profile installation.
+  - Verified internal documentation and deploy scripts are strictly excluded from npm package distribution.
+- **Package Manager Specification and Dependency Lockfile (#404)**:
+  - Specified `"packageManager": "npm@10.9.8"` in `package.json`.
+  - Generated and committed `package-lock.json` for reproducible builds.
+  - Verified `npm audit --omit=dev` reports 0 vulnerabilities.
+
 ## 0.2.40
 
 ### Added
