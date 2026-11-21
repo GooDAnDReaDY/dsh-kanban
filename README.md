@@ -216,6 +216,7 @@ dsh-kanban:
 | `watchRepos` | `string` | `""` | Comma-separated list of watched repositories (e.g. `"owner/repo1, owner/repo2"`), empty watches all |
 | `syncIntervalSec` | `number` | `30` | Background synchronization polling interval in seconds |
 | `webhookSecretRef` | `string` | `""` | DSH credential name containing secret for validating incoming Gitea webhook signatures |
+| `remoteServerToken` | `string` | `""` | DSH credential name containing bearer token for remote DSH server |
 
 ---
 

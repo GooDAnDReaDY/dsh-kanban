@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.2.45] - 2026-11-21
+
+### Added
+- **Configuration Presets & Progressive Disclosure (#414)**:
+  - Added configuration presets: `solo` (local standalone board without Git sync or remote host), `team` (collaborative forge sync with Gitea/GitHub), and `remote` (remote DSH execution).
+  - Progressive disclosure in Kanban settings card: basic tier with $\le 12$ essential fields visible by default, and collapsible advanced settings ("Show Advanced Settings (43 fields)").
+  - Conditional remote section: hides detailed remote host credentials and connection parameters when `remoteMode` is inactive.
+  - Quick-preset applicator bar allowing one-click staging of preset defaults in the settings UI.
+
+### Fixed
+- **Credential-Ref Security for Remote Server Token (#412)**:
+  - Migrated `remoteServerToken` to `role('credential-ref')` using Cordis secrets resolver (`resolveSecret`).
+  - Added dynamic credential resolution at runtime for remote relay requests, eliminating plaintext token persistence in configuration.
+- **Neutralized Author Infrastructure Defaults (#413)**:
+  - Replaced hardcoded author infrastructure defaults (`remoteHost`, `remoteUser`, `remoteSudoUser`, `remoteRoot`, `remoteServerUrl`) with safe empty strings.
+  - Removed internal fallback URL `http://192.168.1.111:3000` from `remote-relay.js`.
+  - Added onboarding guidance banner when remote mode is enabled without a configured remote server URL.
+
 ## [0.2.44] - 2026-11-21
 
 ### Added
