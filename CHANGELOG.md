@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.46] - 2026-11-21
+
+### Fixed
+- **Clean Client Error Propagation & Logging (#415)**:
+  - Eliminated all direct `console.*` calls from client submodules and runtime library code.
+  - Replaced silent empty `catch {}` blocks around card moves, notes, and reasoning effort updates with user-visible UI error notifications.
+  - Documented all legitimate empty catch blocks with inline comment annotations and added automated quality gate (`test/ast-empty-catch.test.mjs`).
+- **Cross-Platform Windows & SMB UNC Compatibility (#416)**:
+  - Adapted verification gate runner to invoke native shell (`cmd.exe` on Windows, `bash` on POSIX).
+  - Replaced non-portable POSIX `cat` utility in test suites with Node.js `readFileSync`.
+  - Guaranteed `store.close()` and backoff retry logic on SQLite temporary directories to prevent `EPERM` locks on Windows.
+  - Added Windows path normalization supporting UNC and drive-letter formats.
+- **Orphan Worktree Pruning & Lifecycle Hygiene (#417)**:
+  - Implemented automatic pruning of empty, unregistered worktree subdirectories in `.worktrees/`.
+  - Added orphan worktree check and cleanup to preflight deployment script.
+
 ## [0.2.45] - 2026-11-21
 
 ### Added
