@@ -1,6 +1,68 @@
 # Changelog
 
+## [0.2.44] - 2026-11-21
+
+### Added
+- **Modular Client Architecture & Build Pipeline (#409)**:
+  - Decomposed monolith `lib/client.js` (5,300+ lines) into 16 coherent submodules under `src/client/`, each strictly $< 600$ lines.
+  - Implemented `scripts/build-client.mjs` with whitespace minimization and integrity verification.
+  - Added bundle size budget test (`test/pack-size.test.mjs`) guaranteeing client bundle $< 220$ KiB (Store limit: 256 KiB).
+  - Added `test/helpers/bundle-text.mjs` with `BundleText` and `readBundle` helper for bundle content assertions.
+
+### Fixed
+- **Atomic Session Slot Reservation (#411)**:
+  - Replaced in-memory session reservation with atomic SQLite transactions (`store.withTransaction` with `BEGIN IMMEDIATE`).
+  - Added `session_reservations` table to preserve reservations across restarts and prevent concurrency bypass when launching multiple tasks simultaneously.
+  - Implemented automatic reaper for expired reservations by TTL.
+  - Added comprehensive parallel concurrency tests verifying strict limit enforcement (e.g. 10 parallel requests with limit 3 produce exactly 3 running sessions and 7 queued tasks).
+
+### Documentation
+- **Settings Reference Synchronization (#410)**:
+  - Synchronized configuration settings and metrics across English, Russian, and Chinese READMEs (`README.md`, `README.ru.md`, `README.zh.md`).
+  - Removed obsolete parameters (`boardKind`, `giteaRepo`), updated ref-based credential configuration (`giteaTokenRef`, `webhookSecretRef`), and documented multi-repository tracking (`watchRepos`).
+
+## [0.2.43] - 2026-11-14
+
+### Fixed
+- Fixed Cordis proxy activation error `cannot get property "layout" without inject` during client boot by accessing layout via `ctx.inject(['layout'])` and declaring `@deepseek-ai/dsh-client-ui-layout` in `package.json` client bundle injects.
+- Fixed `deploy.sh` verification healthcheck to authenticate with token cookie jar against `/dsh-kanban/whoami`.
+
 Notable changes to `@goodandready/dsh-kanban`.
+
+## 0.2.42
+
+### Changed
+- **Move Kanban to Navigation List (#406)**:
+  - Replaced the standalone clone button in the sidebar's top button row next to `newSession` with a standard navigation list item (`sidebar.panellist`) alongside «Плагины», «Маркет плагинов», and «Задачи автоматизации».
+  - Added native slot registration for `sidebar.panellist` (`id: 'kanban'`, `order: 25`, `KanbanPanelIcon`) and `main` (`key: 'kanban'`, `BoardScreen`).
+  - Added seamless DOM fallback for environments without slot rendering into `nav[class*="panelList"]` with active state styling, keyboard accessibility, and collapsed rail state support.
+  - Synchronized toggle state with `ctx.layout.panelInfo` and `ctx.layout.selectPanel`.
+  - Added regression test `test/sidebar-nav.test.mjs` verifying slots, SVG icon, styles, and single instance placement.
+
+## 0.2.41
+
+### Fixed
+- **Empty Catch Blocks and Corrupted Telemetry Observability (#400)**:
+  - Fixed four empty `catch` blocks in `lib/store.js` and `lib/client.js` to ensure clean preflight execution.
+  - Added `corruptedCostMetricsCount` counter and safe fallback handling in `lib/store.js` when parsing `costMetrics` so corrupted telemetry records are tracked rather than silently dropped.
+  - Added unit test in `test/cost-metrics-corrupted.test.mjs` verifying counter increment and non-blocking task hydration.
+- **Dead Exports Elimination and Cost Telemetry Unification (#403)**:
+  - Eliminated dead exports across `lib/` by wiring `extractSessionUsage`, `calculateTokenCost`, and `checkCostLimit` into `lib/routes/board.js`, replacing duplicate inline budget calculation.
+  - Integrated `parseGitLog` and `parseDiffStat` in `lib/pr-generator.js` and `lib/routes/task-actions.js` for flexible string commit and diff parsing.
+  - Connected `remotePathExists` in `lib/remote-runner.js` and `lib/worktree.js` for remote workspace verification.
+  - Added regression test `test/dead-exports.test.mjs` running in CI to enforce all production exports have live callers.
+- **Stale Worktrees and Branches Cleanup (#402)**:
+  - Pruned and removed 7 stale merged worktrees and detached release branches (`feat-166-labels-priority`, `feat-167-due`, `feat-168-export`, `feat-169-notify`, `feat-255-task-provision-service`, `fix/dsh-kanban-config-forms`, and `release-main`).
+
+### Added
+- **Project Structure Map and Canonical Deployment Script (#401)**:
+  - Created `index.md` specifying project overview, DEV paths, test matrix, and verification commands.
+  - Created executable `deploy.sh` for canonical pre-deploy validation and profile installation.
+  - Verified internal documentation and deploy scripts are strictly excluded from npm package distribution.
+- **Package Manager Specification and Dependency Lockfile (#404)**:
+  - Specified `"packageManager": "npm@10.9.8"` in `package.json`.
+  - Generated and committed `package-lock.json` for reproducible builds.
+  - Verified `npm audit --omit=dev` reports 0 vulnerabilities.
 
 ## 0.2.40
 

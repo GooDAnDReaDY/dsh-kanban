@@ -145,36 +145,35 @@ dsh plugin --profile web add @goodandready/dsh-kanban
 ```yaml
 # config.yaml
 dsh-kanban:
-  boardKind: "project"
+  gitProvider: "auto"
   giteaUrl: "https://gitea.yourcompany.com"
-  giteaTokenEnv: "GITEA_TOKEN"
+  giteaTokenRef: "GITEA_TOKEN"
   giteaOwner: "my-team"
-  giteaRepo: "main-app"
-  syncIntervalMs: 30000
-  webhookSecret: ""
+  watchRepos: ""
+  syncIntervalSec: 30
+  webhookSecretRef: ""
 ```
 
 ### 配置参数速查表
 
 | 配置项 | 数据类型 | 默认值 | 功能说明 |
 |:---|:---|:---|:---|
-| `boardKind` | `string` | `"project"` | 看板模式：`"project"`（6 泳道）或 `"simple"`（4 泳道） |
 | `gitProvider` | `string` | `"auto"` | 活动 Git 平台：`"auto"`（按凭证自动检测）、`"gitea"` 或 `"github"` |
 | `githubTokenRef` | `string` | `""` | 包含 GitHub PAT 或应用令牌的 DSH 凭证名称 |
 | `githubOwner` | `string` | `""` | 默认监听的 GitHub 组织或用户名 |
 | `githubWebhookSecretRef` | `string` | `""` | 包含 GitHub Webhook 密钥的 DSH 凭证名称 |
 | `giteaUrl` | `string` | `""` | 用于同步任务的 Gitea / Forgejo 实例基础地址 |
-| `giteaTokenEnv` | `string` | `"GITEA_TOKEN"` | 存储 Gitea API Token 的 DSH 凭据键名 |
+| `giteaTokenRef` | `string` | `"GITEA_TOKEN"` | 存储 Gitea API Token 的 DSH 凭据键名 |
 | `giteaOwner` | `string` | `""` | 默认同步的仓库所属组织或用户名 |
-| `giteaRepo` | `string` | `""` | 默认绑定的代码仓库名称 |
-| `syncIntervalMs` | `number` | `30000` | 后台轮询同步的时间间隔（毫秒） |
-| `webhookSecret` | `string` | `""` | 用于校验 Gitea Webhook 请求签名的可选密钥 |
+| `watchRepos` | `string` | `""` | 监听的仓库列表（逗号分隔，如 `"owner/repo1, owner/repo2"`），留空监听全部 |
+| `syncIntervalSec` | `number` | `30` | 后台轮询同步的时间间隔（秒） |
+| `webhookSecretRef` | `string` | `""` | 存储用于校验 Gitea Webhook 请求签名的 DSH 凭证名称 |
 
 ---
 
 ## 🧪 测试与校验
 
-运行超过 520 个完整的单元测试与集成测试：
+运行超过 875 个完整的单元测试与集成测试：
 
 ```bash
 npm test

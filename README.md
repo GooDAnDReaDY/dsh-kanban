@@ -193,36 +193,35 @@ Navigate to **Settings -> Plugins -> Kanban**:
 ```yaml
 # config.yaml
 dsh-kanban:
-  boardKind: "project"
+  gitProvider: "auto"
   giteaUrl: "https://gitea.yourcompany.com"
-  giteaTokenEnv: "GITEA_TOKEN"
+  giteaTokenRef: "GITEA_TOKEN"
   giteaOwner: "my-team"
-  giteaRepo: "main-app"
-  syncIntervalMs: 30000
-  webhookSecret: ""
+  watchRepos: ""
+  syncIntervalSec: 30
+  webhookSecretRef: ""
 ```
 
 ### Settings Reference Table
 
 | Key | Type | Default | Description |
 |:---|:---|:---|:---|
-| `boardKind` | `string` | `"project"` | Board workflow mode: `"project"` (6 columns) or `"simple"` (4 columns) |
 | `gitProvider` | `string` | `"auto"` | Active Git forge: `"auto"` (detect by credentials), `"gitea"`, or `"github"` |
 | `githubTokenRef` | `string` | `""` | DSH credential name containing GitHub PAT or App token |
 | `githubOwner` | `string` | `""` | Default GitHub organization or username |
 | `githubWebhookSecretRef` | `string` | `""` | DSH credential name containing GitHub webhook secret |
 | `giteaUrl` | `string` | `""` | Base URL of Gitea/Forgejo instance for task synchronization |
-| `giteaTokenEnv` | `string` | `"GITEA_TOKEN"` | DSH Credential name containing the Gitea API access token |
+| `giteaTokenRef` | `string` | `"GITEA_TOKEN"` | DSH Credential name containing the Gitea API access token |
 | `giteaOwner` | `string` | `""` | Default organization or username for synced repositories |
-| `giteaRepo` | `string` | `""` | Default repository name for issue/task sync |
-| `syncIntervalMs` | `number` | `30000` | Background synchronization polling interval in milliseconds |
-| `webhookSecret` | `string` | `""` | Optional secret for validating incoming Gitea webhook signatures |
+| `watchRepos` | `string` | `""` | Comma-separated list of watched repositories (e.g. `"owner/repo1, owner/repo2"`), empty watches all |
+| `syncIntervalSec` | `number` | `30` | Background synchronization polling interval in seconds |
+| `webhookSecretRef` | `string` | `""` | DSH credential name containing secret for validating incoming Gitea webhook signatures |
 
 ---
 
 ## 🧪 Testing & Verification
 
-Run the comprehensive 730+ unit and integration test suite:
+Run the comprehensive 875+ unit and integration test suite:
 
 ```bash
 npm test

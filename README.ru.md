@@ -145,36 +145,35 @@ dsh plugin --profile web add @goodandready/dsh-kanban
 ```yaml
 # config.yaml
 dsh-kanban:
-  boardKind: "project"
+  gitProvider: "auto"
   giteaUrl: "https://gitea.yourcompany.com"
-  giteaTokenEnv: "GITEA_TOKEN"
+  giteaTokenRef: "GITEA_TOKEN"
   giteaOwner: "my-team"
-  giteaRepo: "main-app"
-  syncIntervalMs: 30000
-  webhookSecret: ""
+  watchRepos: ""
+  syncIntervalSec: 30
+  webhookSecretRef: ""
 ```
 
 ### Таблица параметров конфигурации
 
 | Параметр | Тип | По умолчанию | Описание |
 |:---|:---|:---|:---|
-| `boardKind` | `string` | `"project"` | Режим колонок: `"project"` (6 колонок) или `"simple"` (4 колонки) |
 | `gitProvider` | `string` | `"auto"` | Активный Git-провайдер: `"auto"` (по доступным ключам), `"gitea"` или `"github"` |
 | `githubTokenRef` | `string` | `""` | Имя DSH Credential с токеном доступа GitHub PAT / App |
 | `githubOwner` | `string` | `""` | Организация или логин владельца репозитория GitHub |
 | `githubWebhookSecretRef` | `string` | `""` | Имя DSH Credential с секретом вебхука GitHub |
 | `giteaUrl` | `string` | `""` | URL инстанса Gitea/Forgejo для синхронизации задач |
-| `giteaTokenEnv` | `string` | `"GITEA_TOKEN"` | Имя DSH Credential с токеном доступа к Gitea API |
+| `giteaTokenRef` | `string` | `"GITEA_TOKEN"` | Имя DSH Credential с токеном доступа к Gitea API |
 | `giteaOwner` | `string` | `""` | Организация или логин владельца репозитория |
-| `giteaRepo` | `string` | `""` | Имя репозитория для связки задач |
-| `syncIntervalMs` | `number` | `30000` | Интервал фоновой периодической сверки (мс) |
-| `webhookSecret` | `string` | `""` | Секретный ключ для проверки входящих вебхуков от Gitea |
+| `watchRepos` | `string` | `""` | Список отслеживаемых репозиториев через запятую (например `"owner/repo1, owner/repo2"`), пусто — все |
+| `syncIntervalSec` | `number` | `30` | Интервал фоновой периодической сверки (сек) |
+| `webhookSecretRef` | `string` | `""` | Имя DSH Credential с секретным ключом для проверки вебхуков Gitea |
 
 ---
 
 ## 🧪 Тестирование и верификация
 
-Запуск полного набора из более чем 730 юнит- и интеграционных тестов:
+Запуск полного набора из более чем 875 юнит- и интеграционных тестов:
 
 ```bash
 npm test
