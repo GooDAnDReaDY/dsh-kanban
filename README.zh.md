@@ -43,6 +43,13 @@
 
 ---
 
+### v0.2.47 更新亮点
+- **严格 Cordis Proxy 兼容性与设置页修复**: 所有可选 DSH 服务（`costMeter`、`lanSettings`、`configForms`、`layout`、`settings`、`timeMachine`）均安全通过 `ctx.get(...)` 读取，并补齐 `settings.subtitle` 与 `hint.workspaceClaimBoundaries` 词条。
+- **原生会话跳转与工作区关联**: 打开任务会话改为调用 `uiWorkspace.openSession`；新建任务会话自动挂载至对应项目工作区，并在清理 worktree 时保护共享项目工作区不被误删。
+- **深度代码审计修复与默认配置匿名化**: 补齐后端路由依赖与 `outbox`、修复 `db.isTransaction` 嵌套事务检查、修复客户端路径与通知提示并移除远程配置硬编码主机信息。
+
+---
+
 ## 🏗️ 架构设计
 
 ```mermaid

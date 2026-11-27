@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.2.47] - 2026-11-27
+
+### Fixed
+- **Settings Card Crash & Locale Fallback (#424, GitHub #2)**:
+  - Fixed `cannot get property "costMeter" without inject` on DSH strict Cordis proxy by reading optional services (`costMeter`, `lanSettings`, `configForms`, `layout`, `settings`, `timeMachine`) via `ctx.get(...)`.
+  - Added missing `settings.subtitle` and `hint.workspaceClaimBoundaries` keys in English and Chinese locales with raw-key fallback protection.
+- **Native Session Navigation & Workspace Registration (#425)**:
+  - Switched `openSession()` to DSH Core `uiWorkspace.openSession(sessionId)` with graceful fallback.
+  - Automatically attach created Kanban task sessions to their project workspace via `workspaceRegistry.resolveByPath(projectRoot)` and guard against deleting shared project workspaces during worktree cleanup.
+  - Replaced hardcoded remote host URL in client chat navigation with configured `remoteServerUrl` from board state.
+- **Deep Code Audit Runtime Fixes (#426)**:
+  - Wired missing git/worktree/archive/remote/outbound imports and `outbox` in `lib/server/task-handler.js`.
+  - Fixed `db.isTransaction` check for nested SQLite transactions in `lib/store.js`.
+  - Fixed `ReferenceError: existingTask is not defined` and board-aware fallback columns in `lib/server/services.js`.
+  - Added missing `computeNextRun` import and `spec` patch handling in `lib/routes/task.js`, and persisted generated PR descriptions on `POST`.
+  - Fixed client `showNotice` banner, `board` / `setState` / `load(board)` references, and double `/dsh-kanban/task/` endpoint paths.
+- **Anonymization & Preflight Hygiene (#427)**:
+  - Eliminated empty `catch` blocks in client and server runtime paths.
+  - Removed author-specific default host, user, and path fallbacks from `lib/remote-runner.js` and localized UI strings.
+
 ## [0.2.46] - 2026-11-21
 
 ### Fixed
@@ -196,10 +216,10 @@ Notable changes to `@goodandready/dsh-kanban`.
 
 ### Added
 - **Remote Mode for PC Client Operating Against Server 111 (#390)**:
-  - Enabled full seamless operation of DSH Kanban when running on Windows PC client desktop against server 111 (`/mnt/external/Project/DEV/**`), matching the behavior of running directly on the Linux server.
-  - Implemented remote DSH server HTTP relay (`lib/remote-relay.js`): transparently intercepts `/dsh-kanban/board` requests on PC client and proxies board state, cards, and transitions to server 111 over HTTP with bearer authentication and cookies.
-  - Implemented remote SSH Git runner (`lib/remote-runner.js`): executes worktree operations (`createTaskWorktree`, `checkWorktreeDirty`, `mergeTaskWorktree`, `cleanupTaskWorktree`, file diff, and file discard) on server 111 via SSH with POSIX-escaped command wrapping and optional `sudo -u <user>` execution.
-  - Added remote worktree path handling (`lib/worktree.js`) resolving paths to POSIX `/mnt/external/Project/DEV/.worktrees` without Windows backslash corruption, and safe worktree existence validation over SSH.
+  - Enabled full seamless operation of DSH Kanban when running on Windows PC client desktop against a remote Linux DSH host (`<remoteRoot>`), matching the behavior of running directly on the Linux server.
+  - Implemented remote DSH server HTTP relay (`lib/remote-relay.js`): transparently intercepts `/dsh-kanban/board` requests on PC client and proxies board state, cards, and transitions to the remote DSH host over HTTP with bearer authentication and cookies.
+  - Implemented remote SSH Git runner (`lib/remote-runner.js`): executes worktree operations (`createTaskWorktree`, `checkWorktreeDirty`, `mergeTaskWorktree`, `cleanupTaskWorktree`, file diff, and file discard) on the remote host via SSH with POSIX-escaped command wrapping and optional `sudo -u <user>` execution.
+  - Added remote worktree path handling (`lib/worktree.js`) resolving paths to POSIX `<remoteRoot>/.worktrees` without Windows backslash corruption, and safe worktree existence validation over SSH.
   - Added 10 remote configuration options (`lib/config.js`): `remoteMode`, `remoteHost`, `remotePort`, `remoteUser`, `remoteAuthType`, `remoteKeyPath`, `remoteSudoUser`, `remoteRoot`, `remoteServerUrl`, and `remoteServerToken`.
   - Added UI remote controls (`lib/client.js`): Settings Card Remote Execution section with "Test Connection" button testing both SSH connectivity and DSH Server API responsiveness via `/api/dsh-kanban/remote/test`, visual `🌐 Remote: 111` tag in board header, and remote chat session launcher.
   - Preserved 100% backward compatibility: when `remoteMode: false` (default), local execution paths are completely unchanged.

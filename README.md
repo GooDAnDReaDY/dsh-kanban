@@ -43,6 +43,13 @@ Managing concurrent software tasks across multiple autonomous AI agents easily l
 
 ---
 
+### What's New in v0.2.47
+- **Strict Cordis Proxy & Settings UI Resilience**: Optional DSH services (`costMeter`, `lanSettings`, `configForms`, `layout`, `settings`, `timeMachine`) are resolved safely via `ctx.get(...)`, and `settings.subtitle` / `hint.workspaceClaimBoundaries` translations are included.
+- **Native Session Navigation & Workspace Attachment**: Opening a task chat uses `uiWorkspace.openSession`; newly created task sessions attach automatically to the matching DSH project workspace while worktree cleanup guards against deleting shared project workspaces.
+- **Deep Audit Fixes & Clean Anonymized Defaults**: Wired missing server route dependencies, nested SQLite transactions (`db.isTransaction`), board-aware session error transitions, client notice/route fixes, and neutral remote SSH defaults.
+
+---
+
 ## 🏗️ Architecture
 
 ```mermaid
